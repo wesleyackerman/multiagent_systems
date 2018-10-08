@@ -52,13 +52,19 @@ def test_cases():
     result = run_test([NeverForgive(actions), Pavlov(actions)])
     assert result == {'0:0': ['CC', 'CC', 'CC', 'CC', 'CC']}
 
+    result = run_test([Pavlov(actions), Alternater(actions, freq=2)], n_rounds=10)
+    assert result == {'0:0': ['CC', 'CC', 'CD', 'DD', 'CC', 'CC', 'CD', 'DD', 'CC', 'CC']}
+
 
     ## Win Stay - change if you didn't "win" (e.g. one of best 2 outcomes)
-    run_test([WinStayLoseShift(actions), NeverForgive(actions)]) # should be CC
+    result = run_test([WinStayLoseShift(actions), NeverForgive(actions)]) # should be CC
     assert result == {'0:0': ['CC', 'CC', 'CC', 'CC', 'CC']}
 
     result = run_test([WinStayLoseShift(actions), Alternater(actions)])
     assert result == {'0:0': ['CC', 'CD', 'DC', 'DD', 'CC']}
+
+    result = run_test([WinStayLoseShift(actions), Alternater(actions, freq=2)], n_rounds=10)
+    assert result == {'0:0': ['CC', 'CC', 'CD', 'DD', 'CC', 'CC', 'CD', 'DD', 'CC', 'CC']}
 
 
     ## All agents
