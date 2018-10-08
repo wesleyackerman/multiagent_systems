@@ -178,3 +178,37 @@ class Alternater(Agent):
 
     def act(self):
         return self.current_action
+
+class SuperAgent(Agent):
+    """ Start with C. Try to infer who the opponent is.
+
+                            Best response:
+        Always defect -     D
+        Random -            D
+        Always cooperate -  D
+        TFT -               C
+        TF2T -              CD
+        Pav -               D
+        Win stay -          C
+        Never forgive -     D...
+
+    """
+
+    def __init__(self, action_list, freq=1):
+        super().__init__(action_list)
+        self.freq = freq
+        self.clear_state()
+
+    def clear_state(self):
+        self.my_actions = []
+        self.their_actions = []
+        self.current_action = "C"
+
+    def update_state(self, my_action, their_action, payoff):
+        self.my_action =
+        self.their_actions =
+
+
+
+    def act(self):
+        return self.current_action
