@@ -39,7 +39,7 @@ class Agent:
         pass
 
     def __str__(self):
-        return str(self.__class__) + ":" + str(self.score) 
+        return "  {}: {}".format(self.__class__.__name__, self.score)
 
 class RandomAgent(Agent):
     def act(self):
