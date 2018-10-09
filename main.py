@@ -37,7 +37,7 @@ if __name__ == '__main__':
                           WinStayLoseShift(actions),
                           NeverForgive(actions),
                           SuperAgent(actions)]
-            
+
             print("******  Number of rounds: {} ***********".format(n_rounds))
             run_tournmanet(all_agents, n_rounds=n_rounds, play_self=True)
     else:

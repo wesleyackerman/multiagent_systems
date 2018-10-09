@@ -63,6 +63,7 @@ class GamesRunner:
         for agent in self.agents:
             print(agent)
             print("   Rounds: {}".format(agent.rounds_played))
+            print("   Avg Score: {0:.2f}".format(agent.score/agent.rounds_played))
         return self.results
 
     def play_game(self, agent0, agent1):
