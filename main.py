@@ -9,16 +9,6 @@ def run_tournmanet(agents=None, verbose=False, n_rounds=5, play_self=False):
 
 if __name__ == '__main__':
     actions = ["C", "D"]
-    all_agents = [AlwaysDefect(actions),
-                  RandomAgent(actions),
-                  AlwaysCooperate(actions),
-                   TitForTat(actions),
-                   TitFor2Tat(actions),
-                   Pavlov(actions),
-                   WinStayLoseShift(actions),
-                   NeverForgive(actions),
-                  SuperAgent(actions)]
-
     no_random_agents = [AlwaysDefect(actions),
                   AlwaysCooperate(actions),
                    TitForTat(actions),
@@ -35,14 +25,21 @@ if __name__ == '__main__':
 
     #all_agents = [SuperAgent(actions), WinStayLoseShift(actions)]
     if True:
-        play_self = True
-        run_tournmanet(all_agents, n_rounds=.75, play_self=play_self)
-        run_tournmanet(all_agents, n_rounds=.95, play_self=play_self)
-        run_tournmanet(all_agents, n_rounds=.99, play_self=play_self)
-        #
-        run_tournmanet(all_agents, n_rounds=5, play_self=play_self)
-        run_tournmanet(all_agents, n_rounds=100, play_self=play_self)
-        run_tournmanet(all_agents, n_rounds=200, play_self=play_self)
+        for n_rounds in [5,100,200,.75,.95,.99]:
+
+            ## Recreate all agents
+            all_agents = [AlwaysDefect(actions),
+                          RandomAgent(actions),
+                          AlwaysCooperate(actions),
+                          TitForTat(actions),
+                          TitFor2Tat(actions),
+                          Pavlov(actions),
+                          WinStayLoseShift(actions),
+                          NeverForgive(actions),
+                          SuperAgent(actions)]
+            
+            print("******  Number of rounds: {} ***********".format(n_rounds))
+            run_tournmanet(all_agents, n_rounds=n_rounds, play_self=True)
     else:
         #run_tournmanet(no_random_agents, n_rounds=200, play_self=True)
         #run_tournmanet([SuperAgent(actions)], n_rounds=200, play_self=True)

@@ -246,10 +246,7 @@ class SuperAgent(Agent):
                                 Pavlov(actions),
                                 WinStayLoseShift(actions),
                                 NeverForgive(actions)]
-        if self.prime:
-            # Make sure it considers itself a possibility over always defect
-            # self.possible_opponent.insert(0,SuperAgent(actions, prime=False)) # prevent an infinite recurse
-            pass
+
         self.actual_opponent = None
         self.opponent_guess = "TitForTat"
 
@@ -296,82 +293,3 @@ class SuperAgent(Agent):
         #print(self.actual_opponent, self.current_action)
         return self.current_action
 
-class SuperAgent2(Agent):
-    """ Defects early and degenerately
-        Start with C. Try to infer who the opponent is.
-
-                            Best response:   Pattern:
-        Always defect -     D                D...
-        Random -            D                None
-        Always cooperate -  D                C...
-        TFT -               C                Opposite of my last move
-        TF2T -              CD               D if I've defected 2x
-        Pav -               D                C OR
-        Win stay -          C
-        Never forgive -     D...
-
-        You only want to cooperate with TFT (or alternate)
-        You would want to cooperate with never forgive, but there's no way to find out who they are
-    """
-
-    def __init__(self, action_list, prime=True):
-        """ Prime tells it whether this is a real super agent, or a "meta" super agent the super agent uses to determine how the other will play
-        """
-        super().__init__(action_list)
-        self.prime = prime
-        self.clear_state()
-
-    def clear_state(self):
-        actions = ["C", "D"]
-        self.my_actions = []
-        self.their_actions = []
-        self.current_action = "D"
-        self.possible_opponent = [AlwaysDefect(actions),
-                                AlwaysCooperate(actions),
-                                TitForTat(actions),
-                                TitFor2Tat(actions),
-                                Pavlov(actions),
-                                WinStayLoseShift(actions),
-                                NeverForgive(actions)]
-        if self.prime:
-            self.possible_opponent.append(SuperAgent(actions, prime=False)) # prevent an infinite recurse
-        self.actual_opponent = None
-        self.opponent_guess = "TitForTat"
-
-    def update_state(self, my_action, their_action, my_payoff, their_payoff):
-        self.my_actions.append(my_action)
-        self.their_actions.append(their_action)
-
-        # Always defect if they defect the first time
-        if (len(self.their_actions) <= 1 and their_action == "D"):
-            self.current_action = "D"
-            self.possible_opponent = []
-            self.actual_opponent = "AlwaysDefect"
-            self.best_guess = "AlwaysDefect"
-
-        # If no other possibilities, they are random
-        if not self.possible_opponent:
-            self.current_action = "D"
-            self.best_guess = "RandomAgent"
-            self.actual_opponent = "RandomAgent"
-
-        # Update list of possible opponents - we start by assuming they are AlwaysCooperate and defect
-        # If they defect back, we work through our list of strategies
-        for opponent in self.possible_opponent[:]:
-            predicted_action = opponent.act()
-            if predicted_action != their_action:
-                self.possible_opponent.remove(opponent)
-            else:
-                opponent.update_state(their_action, my_action, their_payoff, my_payoff)
-
-        if self.actual_opponent is None and len(self.possible_opponent) > 0:
-            self.best_guess = self.possible_opponent[0].__class__.__name__
-
-            if len(self.possible_opponent)==1:
-                self.actual_opponent = self.best_guess
-
-        self.current_action = self.get_best_response(self.best_guess, my_action)
-
-    def act(self):
-        #print(self.actual_opponent, self.current_action)
-        return self.current_action
