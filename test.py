@@ -75,7 +75,8 @@ def test_cases():
                    TitFor2Tat(actions),
                    Pavlov(actions),
                    WinStayLoseShift(actions),
-                   NeverForgive(actions)]
+                   NeverForgive(actions),
+                  SuperAgent(actions)]
 
     selected_agents = [AlwaysDefect(actions),
                   RandomAgent(actions),
@@ -88,7 +89,7 @@ def test_cases():
     result = run_test(n_rounds=200, agents=selected_agents)
 
     ## All Agents
-    result = run_test(n_rounds=200)
+    result = run_test(n_rounds=200, agents=all_agents)
 
 if __name__ == '__main__':
     test_cases()

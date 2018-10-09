@@ -41,6 +41,11 @@ class Agent:
     def __str__(self):
         return "  {}: {}".format(self.__class__.__name__, self.score)
 
+    def opposite_choice(self, choice):
+        """ Only works with 2 choices
+        """
+        return self.actions[0] if choice ==self.actions[1] else self.actions[0]
+
 class RandomAgent(Agent):
     def act(self):
         return random.choice(self.actions)
@@ -182,32 +187,85 @@ class Alternater(Agent):
 class SuperAgent(Agent):
     """ Start with C. Try to infer who the opponent is.
 
-                            Best response:
-        Always defect -     D
-        Random -            D
-        Always cooperate -  D
-        TFT -               C
-        TF2T -              CD
-        Pav -               D
+                            Best response:   Pattern:
+        Always defect -     D                D...
+        Random -            D                None
+        Always cooperate -  D                C...
+        TFT -               C                Opposite of my last move
+        TF2T -              CD               D if I've defected 2x
+        Pav -               D                C OR
         Win stay -          C
         Never forgive -     D...
-
     """
 
     def __init__(self, action_list, freq=1):
         super().__init__(action_list)
-        self.freq = freq
         self.clear_state()
 
     def clear_state(self):
+        actions = ["C", "D"]
         self.my_actions = []
         self.their_actions = []
         self.current_action = "C"
+        self.possible_opponent = [AlwaysDefect(actions),
+                                AlwaysCooperate(actions),
+                                TitForTat(actions),
+                                TitFor2Tat(actions),
+                                Pavlov(actions),
+                                WinStayLoseShift(actions),
+                                NeverForgive(actions)]
+        self.actual_opponent = None
+        self.opponent_guess = "TitForTat"
 
     def update_state(self, my_action, their_action, payoff):
-        self.my_action =
-        self.their_actions =
+        self.my_actions.append(my_action)
+        self.their_actions.append(their_action)
 
+        # Always defect if they defect within the first 2
+        if (len(their_action) <= 2 and their_action == "D"):
+            self.current_action = "D"
+            self.possible_opponent = []
+            self.actual_opponent = "AlwaysDefect"
+            self.best_guess = "AlwaysDefect"
+
+        # If no other possibilities, they are random
+        if not self.possible_opponent:
+            self.current_action = "D"
+
+        # Update list of possible opponents
+        for opponent in self.possible_opponent[:]:
+            action = opponent.act()
+            if action != their_action:
+                self.possible_opponent.remove(opponent)
+            else:
+                opponent.update_state(my_action, their_action, payoff)
+
+        if self.actual_opponent is None and len(self.possible_opponent) > 0:
+            self.best_guess = self.possible_opponent[0].__class__.__name__
+
+            if len(self.possible_opponent)==1:
+                self.actual_opponent = self.best_guess
+
+        self.current_action = self.get_best_response(self.best_guess, my_action)
+
+
+    def get_best_response(self, best_guess, my_last_action):
+        if best_guess  == "AlwaysCooperate":
+            return "D"
+        elif best_guess  == "NeverForgive":
+            return "D"
+        elif best_guess  == "AlwaysDefect":
+            return "D"
+        elif best_guess  == "NeverForgive":
+            return "D"
+        elif best_guess  == "Pavlov":
+            return "D"
+        elif best_guess  == "TitForTat":  # do the opposite of what I did last time
+            return self.opposite_choice(my_last_action)
+        elif best_guess  == "TitFor2Tat":  # do the opposite of what I did last time
+            return self.opposite_choice(my_last_action)
+        elif best_guess  == "WinStayLoseShift":
+            return "C"
 
 
     def act(self):
