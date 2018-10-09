@@ -107,9 +107,9 @@ class GamesRunner:
         if -1 in [payoff0, payoff1]:
              raise InvalidActionError("Action wasn't C or D")
 
-        # Update Strategies (after payoff eval)
-        agent0.update_state(a0, a1, payoff0)
-        agent1.update_state(a1, a0, payoff1)
+        # Update Strategies (after payoff eval) - need this for WinStayLossShift and SuperAgent
+        agent0.update_state(a0, a1, payoff0, payoff1)
+        agent1.update_state(a1, a0, payoff1, payoff0)
 
 
         if self.verbose: print("Payoffs:" + str(payoff0) + "," + str(payoff1))

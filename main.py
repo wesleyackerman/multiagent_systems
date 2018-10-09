@@ -19,11 +19,28 @@ if __name__ == '__main__':
                    NeverForgive(actions),
                   SuperAgent(actions)]
 
-    all_agents = [SuperAgent(actions), WinStayLoseShift(actions)]
+    no_random_agents = [AlwaysDefect(actions),
+                  AlwaysCooperate(actions),
+                   TitForTat(actions),
+                   TitFor2Tat(actions),
+                   Pavlov(actions),
+                   WinStayLoseShift(actions),
+                   NeverForgive(actions),
+                  SuperAgent(actions)]
+
+    tft_agents = [ TitForTat(actions),
+                   TitFor2Tat(actions),
+                   SuperAgent(actions)]
+
+
+    #all_agents = [SuperAgent(actions), WinStayLoseShift(actions)]
     # run_tournmanet(all_agents, n_rounds=.75)
     # run_tournmanet(all_agents, n_rounds=.95)
     # run_tournmanet(all_agents, n_rounds=.99)
     #
     # run_tournmanet(all_agents, n_rounds=5)
     # run_tournmanet(all_agents, n_rounds=100)
-    run_tournmanet(all_agents, n_rounds=200)
+    #run_tournmanet(all_agents, n_rounds=5)
+
+    run_tournmanet(no_random_agents, n_rounds=200)
+    #run_tournmanet(tft_agents, n_rounds=10)

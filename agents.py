@@ -29,7 +29,7 @@ class Agent:
         # Every inheritor of Agent class should have their own action function
         raise NotImplementedError()
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         # inheritors may not need this if they don't keep track of state (like "always defect"). Both "my" and "their" actions are passed, in case either/both are needed 
         # pass current payoff (needed for win/lose shift
         pass
@@ -44,7 +44,7 @@ class Agent:
     def opposite_choice(self, choice):
         """ Only works with 2 choices
         """
-        return self.actions[0] if choice ==self.actions[1] else self.actions[0]
+        return self.actions[0] if choice ==self.actions[1] else self.actions[1]
 
 class RandomAgent(Agent):
     def act(self):
@@ -66,7 +66,7 @@ class NeverForgive(Agent):
     def clear_state(self):
         self.current_action = "C"
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         if their_action == "D":
             self.current_action = "D"
 
@@ -81,7 +81,7 @@ class TitForTat(Agent):
     def clear_state(self):
         self.current_action = "C"
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         self.current_action = their_action
 
     def act(self):
@@ -100,7 +100,7 @@ class TitFor2Tat(Agent):
         self.state = []
         self.current_action = "C"
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         if their_action == "C":
             self.state = []
             self.current_action = "C"
@@ -127,7 +127,7 @@ class Pavlov(Agent):
         self.current_action = "C"
         self.state = None
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         if my_action != their_action:
             self.current_action = "D"
         else:
@@ -148,8 +148,8 @@ class WinStayLoseShift(Agent):
     def clear_state(self):
         self.current_action = "C"
 
-    def update_state(self, my_action, their_action, payoff):
-        if payoff in self.best_payoffs:
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
+        if my_payoff in self.best_payoffs:
             self.current_action = my_action
         else:
             # switch to other action
@@ -171,7 +171,7 @@ class Alternater(Agent):
         self.state = ["C"]
         self.current_action = "C"
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         if self.state == ["C"]*self.freq:
             self.state = ["D"]
             self.current_action = "D"
@@ -196,6 +196,9 @@ class SuperAgent(Agent):
         Pav -               D                C OR
         Win stay -          C
         Never forgive -     D...
+
+        You only want to cooperate with TFT (or alternate)
+        You would want to cooperate with never forgive, but there's no way to find out who they are
     """
 
     def __init__(self, action_list, freq=1):
@@ -206,7 +209,7 @@ class SuperAgent(Agent):
         actions = ["C", "D"]
         self.my_actions = []
         self.their_actions = []
-        self.current_action = "C"
+        self.current_action = "D"
         self.possible_opponent = [AlwaysDefect(actions),
                                 AlwaysCooperate(actions),
                                 TitForTat(actions),
@@ -217,12 +220,12 @@ class SuperAgent(Agent):
         self.actual_opponent = None
         self.opponent_guess = "TitForTat"
 
-    def update_state(self, my_action, their_action, payoff):
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
         self.my_actions.append(my_action)
         self.their_actions.append(their_action)
 
-        # Always defect if they defect within the first 2
-        if (len(their_action) <= 2 and their_action == "D"):
+        # Always defect if they defect the first time
+        if (len(self.their_actions) <= 1 and their_action == "D"):
             self.current_action = "D"
             self.possible_opponent = []
             self.actual_opponent = "AlwaysDefect"
@@ -231,15 +234,17 @@ class SuperAgent(Agent):
         # If no other possibilities, they are random
         if not self.possible_opponent:
             self.current_action = "D"
+            self.best_guess = "RandomAgent"
+            self.actual_opponent = "RandomAgent"
 
         # Update list of possible opponents - we start by assuming they are AlwaysCooperate and defect
         # If they defect back, we work through our list of strategies
         for opponent in self.possible_opponent[:]:
-            action = opponent.act()
-            if action != their_action:
+            predicted_action = opponent.act()
+            if predicted_action != their_action:
                 self.possible_opponent.remove(opponent)
             else:
-                opponent.update_state(my_action, their_action, payoff)
+                opponent.update_state(their_action, my_action, their_payoff, my_payoff)
 
         if self.actual_opponent is None and len(self.possible_opponent) > 0:
             self.best_guess = self.possible_opponent[0].__class__.__name__
@@ -248,10 +253,14 @@ class SuperAgent(Agent):
                 self.actual_opponent = self.best_guess
 
         self.current_action = self.get_best_response(self.best_guess, my_action)
-        print(self.possible_opponent)
 
     def get_best_response(self, best_guess, my_last_action):
-        if best_guess  == "AlwaysCooperate":
+        # Rule out TFT, then always defect
+        if best_guess  == "TitForTat":  # do the opposite of what I did last time
+            return self.opposite_choice(my_last_action)
+        elif best_guess  == "TitFor2Tat":  # do the opposite of what I did last time
+            return self.opposite_choice(my_last_action)
+        elif best_guess  == "AlwaysCooperate":
             return "D"
         elif best_guess  == "NeverForgive":
             return "D"
@@ -261,13 +270,11 @@ class SuperAgent(Agent):
             return "D"
         elif best_guess  == "Pavlov":
             return "D"
-        elif best_guess  == "TitForTat":  # do the opposite of what I did last time
-            return self.opposite_choice(my_last_action)
-        elif best_guess  == "TitFor2Tat":  # do the opposite of what I did last time
-            return self.opposite_choice(my_last_action)
         elif best_guess  == "WinStayLoseShift":
             return "D"
-
+        elif best_guess == "RandomAgent":
+            return "D"
 
     def act(self):
+        print(self.actual_opponent, self.current_action)
         return self.current_action
