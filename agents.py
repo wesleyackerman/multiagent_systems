@@ -232,7 +232,8 @@ class SuperAgent(Agent):
         if not self.possible_opponent:
             self.current_action = "D"
 
-        # Update list of possible opponents
+        # Update list of possible opponents - we start by assuming they are AlwaysCooperate and defect
+        # If they defect back, we work through our list of strategies
         for opponent in self.possible_opponent[:]:
             action = opponent.act()
             if action != their_action:
@@ -247,7 +248,7 @@ class SuperAgent(Agent):
                 self.actual_opponent = self.best_guess
 
         self.current_action = self.get_best_response(self.best_guess, my_action)
-
+        print(self.possible_opponent)
 
     def get_best_response(self, best_guess, my_last_action):
         if best_guess  == "AlwaysCooperate":
@@ -265,7 +266,7 @@ class SuperAgent(Agent):
         elif best_guess  == "TitFor2Tat":  # do the opposite of what I did last time
             return self.opposite_choice(my_last_action)
         elif best_guess  == "WinStayLoseShift":
-            return "C"
+            return "D"
 
 
     def act(self):
