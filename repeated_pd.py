@@ -1,8 +1,9 @@
 from numpy.random import choice
 from agents import *
+import copy
 
 class GamesRunner:
-    def __init__(self, agents=None, verbose=False, n_rounds=5):
+    def __init__(self, agents=None, verbose=False, n_rounds=5, play_self=False):
         self.actions = ["C", "D"]
 
         if agents is None:
@@ -23,6 +24,7 @@ class GamesRunner:
         self.total_rounds_played = 0
         self.n_agents = len(self.agents)
         self.verbose = verbose # Debugging printouts
+        self.play_self = play_self
 
         # Payoff values specific to prisoner's dilemma
         self.R = 3
@@ -37,20 +39,30 @@ class GamesRunner:
             if self.verbose: print("~~~~~~~~~~~~~~~~\n" + "Agent" + str(i) + "\n~~~~~~~~~~~~~~~~")
             # Each agent should only play each opponent once, so iterate with each agent playing all agents that come AFTER them in the list
             agent0 = self.agents[i]
-            n_opponents = self.n_agents - 1 - i
+
+            # play_self_offset = 1 if not self.play_self else 0
+            n_opponents = self.n_agents - i - 1
 
             # Play each opponent
             for j in range(n_opponents):
                 opp_idx = i + j + 1
-                assert(opp_idx > i)
+                assert(opp_idx > i )
                 if self.verbose: print("Agent" + str(opp_idx))
                 agent1 = self.agents[opp_idx]
                 result = self.play_game(agent0, agent1)
                 self.results["{}:{}".format(i,j)] = result
+
+            if self.play_self:
+                agent1 = copy.deepcopy(agent0)
+                result = self.play_game(agent0, agent1)
+                self.results["{}:{}".format(i,i)] = result
+
+
         if self.verbose: print("Total rounds played: " + str(self.total_rounds_played))
         print("Games played: " + str(self.n_games_played))
         for agent in self.agents:
             print(agent)
+            print("   Rounds: {}".format(agent.rounds_played))
         return self.results
 
     def play_game(self, agent0, agent1):
@@ -82,6 +94,9 @@ class GamesRunner:
         payoff0, payoff1, result = self.prisoners_dilemma(agent0, agent1)
         agent0.score += payoff0
         agent1.score += payoff1
+        agent0.rounds_played += 1
+        agent1.rounds_played += 1
+
         return result
 
     def prisoners_dilemma(self, agent0, agent1):

@@ -24,6 +24,7 @@ class Agent:
         self.score = 0
         self.state = None
         self.current_action = None
+        self.rounds_played = 0
 
     def act(self):
         # Every inheritor of Agent class should have their own action function
@@ -45,6 +46,30 @@ class Agent:
         """ Only works with 2 choices
         """
         return self.actions[0] if choice ==self.actions[1] else self.actions[1]
+
+    def get_best_response(self, best_guess, my_last_action):
+        # Rule out TFT, then always defect
+        if best_guess  == "TitForTat":  # do the opposite of what I did last time
+            return self.opposite_choice(my_last_action)
+        elif best_guess  == "TitFor2Tat":  # do the opposite of what I did last time
+            return self.opposite_choice(my_last_action)
+        elif best_guess  == "AlwaysCooperate":
+            return "D"
+        elif best_guess  == "NeverForgive":
+            return "D"
+        elif best_guess  == "AlwaysDefect":
+            return "D"
+        elif best_guess  == "NeverForgive":
+            return "D"
+        elif best_guess  == "Pavlov":
+            return "D"
+        elif best_guess  == "WinStayLoseShift":
+            return "D"
+        elif best_guess == "RandomAgent":
+            return "D"
+        elif best_guess == "SuperAgent":
+            return "C"
+
 
 class RandomAgent(Agent):
     def act(self):
@@ -201,8 +226,12 @@ class SuperAgent(Agent):
         You would want to cooperate with never forgive, but there's no way to find out who they are
     """
 
-    def __init__(self, action_list, freq=1):
+    def __init__(self, action_list, prime=True):
+        """ Prime tells it whether this is a real super agent, or a "meta" super agent the super agent uses to determine how the other will play
+        Prime implies it may have to play a version of itself; THIS IS DEPRECATED
+        """
         super().__init__(action_list)
+        self.prime = prime
         self.clear_state()
 
     def clear_state(self):
@@ -217,6 +246,95 @@ class SuperAgent(Agent):
                                 Pavlov(actions),
                                 WinStayLoseShift(actions),
                                 NeverForgive(actions)]
+        if self.prime:
+            # Make sure it considers itself a possibility over always defect
+            # self.possible_opponent.insert(0,SuperAgent(actions, prime=False)) # prevent an infinite recurse
+            pass
+        self.actual_opponent = None
+        self.opponent_guess = "TitForTat"
+
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
+        self.my_actions.append(my_action)
+        self.their_actions.append(their_action)
+
+        # If they are me, cooperate with them
+        if self.my_actions == self.their_actions:
+            if len(self.my_actions) > 3:
+                self.current_action = "C"
+                self.best_guess = "SuperAgent"
+            elif len(self.my_actions) == 2: # see if they'll cooperate, otherwise they are always defect
+                self.current_action = "C"
+                return
+
+        elif not self.possible_opponent: # If no other possibilities, they are random
+            self.current_action = "D"
+            self.best_guess = "RandomAgent"
+            self.actual_opponent = "RandomAgent"
+
+        # Update list of possible opponents - we start by assuming they are AlwaysCooperate and defect
+        # If they defect back, we work through our list of strategies
+        for opponent in self.possible_opponent[:]:
+            predicted_action = opponent.act()
+            if predicted_action != their_action:
+                self.possible_opponent.remove(opponent)
+            else:
+                opponent.update_state(their_action, my_action, their_payoff, my_payoff)
+
+        if self.actual_opponent is None and len(self.possible_opponent) > 0:
+            self.best_guess = self.possible_opponent[0].__class__.__name__
+
+            if len(self.possible_opponent)==1:
+                self.actual_opponent = self.best_guess
+
+        self.current_action = self.get_best_response(self.best_guess, my_action)
+
+        if self.prime:
+            #print(self.best_guess)
+            pass
+
+    def act(self):
+        #print(self.actual_opponent, self.current_action)
+        return self.current_action
+
+class SuperAgent2(Agent):
+    """ Defects early and degenerately
+        Start with C. Try to infer who the opponent is.
+
+                            Best response:   Pattern:
+        Always defect -     D                D...
+        Random -            D                None
+        Always cooperate -  D                C...
+        TFT -               C                Opposite of my last move
+        TF2T -              CD               D if I've defected 2x
+        Pav -               D                C OR
+        Win stay -          C
+        Never forgive -     D...
+
+        You only want to cooperate with TFT (or alternate)
+        You would want to cooperate with never forgive, but there's no way to find out who they are
+    """
+
+    def __init__(self, action_list, prime=True):
+        """ Prime tells it whether this is a real super agent, or a "meta" super agent the super agent uses to determine how the other will play
+        """
+        super().__init__(action_list)
+        self.prime = prime
+        self.clear_state()
+
+    def clear_state(self):
+        actions = ["C", "D"]
+        self.my_actions = []
+        self.their_actions = []
+        self.current_action = "D"
+        self.possible_opponent = [AlwaysDefect(actions),
+                                AlwaysCooperate(actions),
+                                TitForTat(actions),
+                                TitFor2Tat(actions),
+                                Pavlov(actions),
+                                WinStayLoseShift(actions),
+                                NeverForgive(actions)]
+        if self.prime:
+            self.possible_opponent.append(SuperAgent(actions, prime=False)) # prevent an infinite recurse
         self.actual_opponent = None
         self.opponent_guess = "TitForTat"
 
@@ -254,27 +372,6 @@ class SuperAgent(Agent):
 
         self.current_action = self.get_best_response(self.best_guess, my_action)
 
-    def get_best_response(self, best_guess, my_last_action):
-        # Rule out TFT, then always defect
-        if best_guess  == "TitForTat":  # do the opposite of what I did last time
-            return self.opposite_choice(my_last_action)
-        elif best_guess  == "TitFor2Tat":  # do the opposite of what I did last time
-            return self.opposite_choice(my_last_action)
-        elif best_guess  == "AlwaysCooperate":
-            return "D"
-        elif best_guess  == "NeverForgive":
-            return "D"
-        elif best_guess  == "AlwaysDefect":
-            return "D"
-        elif best_guess  == "NeverForgive":
-            return "D"
-        elif best_guess  == "Pavlov":
-            return "D"
-        elif best_guess  == "WinStayLoseShift":
-            return "D"
-        elif best_guess == "RandomAgent":
-            return "D"
-
     def act(self):
-        print(self.actual_opponent, self.current_action)
+        #print(self.actual_opponent, self.current_action)
         return self.current_action
