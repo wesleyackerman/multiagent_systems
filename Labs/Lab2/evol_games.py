@@ -19,24 +19,22 @@ class GamesRunner:
             self.games_per_generation = games_per_generation
             self.create_agent_lists()
 
-            if game == "BS":
-                for agent in self.agents:
-                    agent.type = choice([0,1])
+        if game == "BS":
+            for agent in self.agents:
+                agent.type = choice([0,1])
 
-        self.discount_factor = .99
+        self.gamma = .99
         self.n_games_played = 0
         self.total_rounds_played = 0
         self.n_agents = len(self.agents)
         self.verbose = verbose # Debugging printouts
 
-        self.payoffs = self.calc_payoffs(self.game)
-
-	if game == 'PD':
+        if game == "PD":
             self.R = 3
             self.T = 5
             self.P = 2
             self.S = 1
-        elif game == 'SH':
+        elif game == "SH":
             self.R = 2
             self.T = 1
             self.P = 1
@@ -46,20 +44,22 @@ class GamesRunner:
         self.TD = 2
         self.A = 0
 
+        self.payoffs = self.calc_payoffs(self.game)
 
     def run(self):
         print("A1:" + str(len(self.a1_players)) + "--A2:" + str(len(self.a2_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
         self.play_cycle()
         avg_payoffs = self.avg_payoffs()
         avg = sum(avg_payoffs) / float(len(avg_payoffs))
-        self.n_a1 += self.n_a1 * (avg_payoff(self.a1_players) - avg)
-        self.n_a2 += self.n_a2 * (avg_payoff(self.a2_players) - avg)
-        self.n_tft += self.n_tft * (avg_payoff(self.tft_players) - avg)
-        self.n_ntft += self.n_ntft * (avg_payoff(self.ntft_players) - avg)
+        self.n_a1 += self.n_a1 * (self.avg_payoff(self.a1_players) - avg)
+        self.n_a2 += self.n_a2 * (self.avg_payoff(self.a2_players) - avg)
+        self.n_tft += self.n_tft * (self.avg_payoff(self.tft_players) - avg)
+        self.n_ntft += self.n_ntft * (self.avg_payoff(self.ntft_players) - avg)
         self.create_agent_lists()
 
     def play_cycle(self):
-        if interation == "REP":
+        if self.interaction == "REP":
+            counter = 0
             while counter < self.games_per_generation:
                 a0 = random.choice(self.agents)
                 a1 = random.choice(self.agents)
@@ -71,10 +71,11 @@ class GamesRunner:
                         temp = a1
                         a1 = a0
                         a0 = temp
-                play_game(a0, a1)
+                self.play_game(a0, a1)
+                counter += 1
 
     def play_game(self, agent0, agent1):
-        payoffs = self.payoffs[(convert_agent_type(agent0), convert_agent_type(agent1))]
+        payoffs = self.payoffs[(self.convert_agent_type(agent0), self.convert_agent_type(agent1))]
         agent0.score += payoffs[0]
         agent1.score += payoffs[1]
     
@@ -133,7 +134,7 @@ class GamesRunner:
             print(self.scoreboard[i])
 
     def avg_payoffs(self):
-        return [avg_payoff(self.a1_players), avg_payoff(self.a2_players), avg_payoff(self.tft_players), avg_payoff(self.ntft_players)]
+        return [self.avg_payoff(self.a1_players), self.avg_payoff(self.a2_players), self.avg_payoff(self.tft_players), self.avg_payoff(self.ntft_players)]
 
     def avg_payoff(self, agents):
         if len(agents) == 0:
