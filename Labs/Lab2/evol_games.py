@@ -4,8 +4,9 @@ import copy
 import numpy as np
 
 class GamesRunner:
-    def __init__(self, game="PD", verbose=False, n_a1=.25, n_a2=.25, n_tft=.25, n_ntft=.25, games_per_generation=1500, interaction='REP'):
+    def __init__(self, game="PD", verbose=False, n_a1=.25, n_a2=.25, n_tft=.25, n_ntft=.25, n_generations=1000, games_per_generation=900, interaction='REP'):
         self.interaction = interaction
+        self.n_generations = n_generations
         self.game = game
         self.n_agents = 900
         self.actions = ['C','D']        
@@ -47,15 +48,21 @@ class GamesRunner:
         self.payoffs = self.calc_payoffs(self.game)
 
     def run(self):
-        print("A1:" + str(len(self.a1_players)) + "--A2:" + str(len(self.a2_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
-        self.play_cycle()
-        avg_payoffs = self.avg_payoffs()
-        avg = sum(avg_payoffs) / float(len(avg_payoffs))
-        self.n_a1 += self.n_a1 * (self.avg_payoff(self.a1_players) - avg)
-        self.n_a2 += self.n_a2 * (self.avg_payoff(self.a2_players) - avg)
-        self.n_tft += self.n_tft * (self.avg_payoff(self.tft_players) - avg)
-        self.n_ntft += self.n_ntft * (self.avg_payoff(self.ntft_players) - avg)
-        self.create_agent_lists()
+        for i in range(self.n_generations):
+            print("A1:" + str(len(self.a1_players)) + "--A2:" + str(len(self.a2_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
+            self.play_cycle()
+            avg_payoffs = self.avg_payoffs()
+            avg = sum(avg_payoffs) / float(len(avg_payoffs))
+            print(self.n_a1)
+            print(self.n_a2)
+            print(avg)
+            print(self.avg_payoff(self.a1_players))
+            self.n_a1 += self.n_a1 * (self.avg_payoff(self.a1_players) - avg)
+            self.n_a2 += self.n_a2 * (self.avg_payoff(self.a2_players) - avg)
+            self.n_tft += self.n_tft * (self.avg_payoff(self.tft_players) - avg)
+            self.n_ntft += self.n_ntft * (self.avg_payoff(self.ntft_players) - avg)
+            assert(self.n_a1 + self.n_a2 + self.n_tft + self.n_ntft == self.n_agents)
+            self.create_agent_lists()
 
     def play_cycle(self):
         if self.interaction == "REP":
