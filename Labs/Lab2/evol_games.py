@@ -35,14 +35,11 @@ class GamesRunner:
         self.play_cycle()
         avg_payoffs = self.avg_payoffs()
         avg = sum(avg_payoffs) / float(len(avg_payoffs))
-        self.n_a1 + = self.n_a1 * (avg_payoff(self.a1_players) - avg)
-        self.n_a2 + = self.n_a2 * (avg_payoff(self.a2_players) - avg)
-        self.n_tft + = self.n_tft * (avg_payoff(self.tft_players) - avg)
-        self.n_ntft + = self.n_ntft * (avg_payoff(self.ntft_players) - avg)
+        self.n_a1 += self.n_a1 * (avg_payoff(self.a1_players) - avg)
+        self.n_a2 += self.n_a2 * (avg_payoff(self.a2_players) - avg)
+        self.n_tft += self.n_tft * (avg_payoff(self.tft_players) - avg)
+        self.n_ntft += self.n_ntft * (avg_payoff(self.ntft_players) - avg)
         self.create_agent_lists()
-
-
-        
 
     def play_cycle(self):
         if interation == "REP":
