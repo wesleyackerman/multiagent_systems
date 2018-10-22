@@ -1,10 +1,12 @@
 from numpy.random import choice
 from agents import *
 import copy
+import numpy as np
 
 class GamesRunner:
-    def __init__(self, agents=None, verbose=False, n_rounds=5, play_self=False):
+    def __init__(self, agents=None, verbose=False, n_rounds=5, play_self=False, n_cycles=10):
         self.actions = ["C", "D"]
+        self.n_cycles = n_cycles
 
         if agents is None:
             # RandomAgent(self.actions)
@@ -25,6 +27,7 @@ class GamesRunner:
         self.n_agents = len(self.agents)
         self.verbose = verbose # Debugging printouts
         self.play_self = play_self
+        self.scoreboard = np.zeros((self.n_agents, 2))	
 
         # Payoff values specific to prisoner's dilemma
         self.R = 3
@@ -33,6 +36,24 @@ class GamesRunner:
         self.P = 2
 
     def run(self):
+        for i in range(self.n_cycles):
+            self.play_cycle()
+
+        if self.verbose: print("Total rounds played: " + str(self.total_rounds_played))
+        print("Games played: " + str(self.n_games_played))
+        for agent in self.agents:
+            print(agent)
+            print("   Avg Rounds per cycle: {}".format(agent.rounds_played / self.n_cycles))
+            print("   Avg Score: {0:.2f}".format(agent.score/agent.rounds_played))
+        
+        self.scoreboard /= self.n_cycles
+        #if self.n_rounds > 1:
+            #self.scoreboard /= self.n_rounds
+        self.print_scoreboard()
+        #print(self.scoreboard / self.n_cycles)
+        return self.results
+
+    def play_cycle(self):
         self.results = {}
         # Loop through all agents
         for i in range(self.n_agents):
@@ -49,36 +70,49 @@ class GamesRunner:
                 assert(opp_idx > i )
                 if self.verbose: print("Agent" + str(opp_idx))
                 agent1 = self.agents[opp_idx]
-                result = self.play_game(agent0, agent1)
+                scores, result = self.play_game(agent0, agent1)
                 self.results["{}:{}".format(i,j)] = result
+
+		# if super agent is being played
+                if agent1.agent_type() == "SuperAgent":
+                    self.scoreboard[i] += np.array(scores)
 
             if self.play_self:
                 agent1 = copy.deepcopy(agent0)
-                result = self.play_game(agent0, agent1)
+                scores, result = self.play_game(agent0, agent1)
                 self.results["{}:{}".format(i,i)] = result
+                if agent0.agent_type() == "SuperAgent":
+                    self.scoreboard[i] += np.array(scores)
 
-
-        if self.verbose: print("Total rounds played: " + str(self.total_rounds_played))
-        print("Games played: " + str(self.n_games_played))
-        for agent in self.agents:
-            print(agent)
-            print("   Rounds: {}".format(agent.rounds_played))
-            print("   Avg Score: {0:.2f}".format(agent.score/agent.rounds_played))
-        return self.results
+        #if self.verbose: print("Total rounds played: " + str(self.total_rounds_played))
+        #print("Games played: " + str(self.n_games_played))
+        #for agent in self.agents:
+        #    print(agent)
+        #    print("   Rounds: {}".format(agent.rounds_played))
+        #    print("   Avg Score: {0:.2f}".format(agent.score/agent.rounds_played))
+        #return self.results
 
     def play_game(self, agent0, agent1):
+        a0_score = 0
+        a1_score = 0
+        round_count = self.n_rounds // 1.0
         if self.verbose: print("Playing game...")
 
         results = []
         if self.n_rounds >= 1:
             # play n rounds
             for i in range(self.n_rounds):
-                result = self.play_and_score(agent0, agent1)
+                a0, a1, result = self.play_and_score(agent0, agent1)
+                a0_score += a0
+                a1_score += a1
                 results.append(result)
         else:
             # probability n of playing next round. Keep looping until "cont" is False
             while True:
-                result = self.play_and_score(agent0, agent1)
+                round_count += 1
+                a0, a1, result = self.play_and_score(agent0, agent1)
+                a0_score += a0
+                a1_score += a1
                 results.append(result)
                 cont = choice([True, False], p=[self.n_rounds, 1-self.n_rounds])
                 if not cont:
@@ -87,7 +121,8 @@ class GamesRunner:
         self.n_games_played += 1
         agent0.clear_state()
         agent1.clear_state()
-        return results
+
+        return (a0_score / round_count, a1_score / round_count), results
 
     def play_and_score(self, agent0, agent1):
         if self.verbose: print("Playing round...")
@@ -98,7 +133,7 @@ class GamesRunner:
         agent0.rounds_played += 1
         agent1.rounds_played += 1
 
-        return result
+        return payoff0, payoff1, result
 
     def prisoners_dilemma(self, agent0, agent1):
         a0 = agent0.act()
@@ -131,6 +166,11 @@ class GamesRunner:
         if self.verbose: print("Payoffs:" + str(payoff0) + "," + str(payoff1))
         result = a0+a1
         return payoff0, payoff1, result
+
+    def print_scoreboard(self):
+        for i,agent in enumerate(self.agents):
+            print(agent.agent_type())
+            print(self.scoreboard[i])
 
 class InvalidActionError(BaseException):
     def __init__(self, value):

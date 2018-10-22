@@ -25,6 +25,7 @@ class Agent:
         self.state = None
         self.current_action = None
         self.rounds_played = 0
+        self.type = 0
 
     def act(self):
         # Every inheritor of Agent class should have their own action function
@@ -41,6 +42,9 @@ class Agent:
 
     def __str__(self):
         return "  {}: {}".format(self.__class__.__name__, self.score)
+
+    def agent_type(self):
+        return self.__class__.__name__
 
     def opposite_choice(self, choice):
         """ Only works with 2 choices
@@ -108,6 +112,23 @@ class TitForTat(Agent):
 
     def update_state(self, my_action, their_action, my_payoff, their_payoff):
         self.current_action = their_action
+
+    def act(self):
+        return self.current_action
+
+class NotTitForTat(Agent):
+    def __init__(self, action_list):
+        super().__init__(action_list)
+        self.clear_state()
+
+    def clear_state(self):
+        self.current_action = "D"
+
+    def update_state(self, my_action, their_action, my_payoff, their_payoff):
+        if their_action == 'D':
+            self.current_action = 'C'
+        elif their_action == 'C':
+            self.current_action = 'D'
 
     def act(self):
         return self.current_action
