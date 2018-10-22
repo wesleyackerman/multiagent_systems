@@ -7,7 +7,8 @@ class GamesRunner:
     def __init__(self, game="PD", verbose=False, n_a1=.25, n_a2=.25, n_tft=.25, n_ntft=.25, games_per_generation=1500, interaction='REP'):
         self.interaction = interaction
         self.game = game
-        n_agents = 900
+        self.n_agents = 900
+        self.actions = ['C','D']        
 
         self.n_a1 = n_a1
         self.n_a2 = n_a2
@@ -16,7 +17,7 @@ class GamesRunner:
 
         if interaction == 'REP':
             self.games_per_generation = games_per_generation
-            self.agents = self.a1_players + self.a2_players + self.tft_players + self.ntft_players
+            self.create_agent_lists()
 
             if game == "BS":
                 for agent in self.agents:
@@ -29,6 +30,22 @@ class GamesRunner:
         self.verbose = verbose # Debugging printouts
 
         self.payoffs = self.calc_payoffs(self.game)
+
+	if game == 'PD':
+            self.R = 3
+            self.T = 5
+            self.P = 2
+            self.S = 1
+        elif game == 'SH':
+            self.R = 2
+            self.T = 1
+            self.P = 1
+            self.S = 0
+        # Battle of the sexes rewards (together + likes activity, together + dislikes activity, apart)
+        self.TL = 3
+        self.TD = 2
+        self.A = 0
+
 
     def run(self):
         print("A1:" + str(len(self.a1_players)) + "--A2:" + str(len(self.a2_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
@@ -58,7 +75,7 @@ class GamesRunner:
 
     def play_game(self, agent0, agent1):
         payoffs = self.payoffs[(convert_agent_type(agent0), convert_agent_type(agent1))]
-	agent0.score += payoffs[0]
+        agent0.score += payoffs[0]
         agent1.score += payoffs[1]
     
     def convert_agent_type(self, agent):
@@ -72,10 +89,10 @@ class GamesRunner:
             return 'nTFT'
 
     def create_agent_lists(self):
-        self.a2_players = [AlwaysDefect(self.actions)] * (self.n_a2 * self.n_agents)
-        self.a1_players = [AlwaysCooperate(self.actions)] * (self.n_a1 * self.n_agents)
-        self.tft_players = [TitForTat(self.actions)] * (self.n_tft * self.n_agents)
-        self.ntft_players = [NotTitForTat(self.actions)] * (self.n_ntft * self.n_agents)
+        self.a2_players = [AlwaysDefect(self.actions)] * int(self.n_a2 * self.n_agents)
+        self.a1_players = [AlwaysCooperate(self.actions)] * int(self.n_a1 * self.n_agents)
+        self.tft_players = [TitForTat(self.actions)] * int(self.n_tft * self.n_agents)
+        self.ntft_players = [NotTitForTat(self.actions)] * int(self.n_ntft * self.n_agents)
         self.agents = self.a1_players + self.a2_players + self.tft_players + self.ntft_players
 
     def prisoners_dilemma(self, agent0, agent1):
@@ -129,11 +146,11 @@ class GamesRunner:
     def calc_payoffs(self, game):
         agent_types = ['A1', 'A2', 'TFT', 'nTFT']
         if game == 'PD':
-            return calc_payoffs_pd(agent_types)
+            return self.calc_payoffs_pd(agent_types)
         elif game == 'SH':
-            return calc_payoffs_pd(agent_types)
+            return self.calc_payoffs_pd(agent_types)
         elif game == 'BS':
-            return calc_payoffs_bs(agent_types)
+            return self.calc_payoffs_bs(agent_types)
 
             
     def calc_payoffs_pd(self, agent_types):
@@ -157,9 +174,9 @@ class GamesRunner:
         payoffs[('nTFT', 'A1')] = (self.T / (1-self.gamma), self.S / (1-self.gamma))
         payoffs[('nTFT', 'A2')] = (self.P + self.gamma * (self.S / (1-self.gamma)), self.P + self.gamma * (self.T / (1-self.gamma)))
         payoffs[('nTFT', 'TFT')] =  (self.T / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.S) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4)),
-                                     (self.S / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.T) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4)))
+                                     (self.S / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.T) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4))))
         payoffs[('nTFT', 'nTFT')] = (self.P / (1 - self.gamma ** 2) + ((self.gamma * self.R) / (1 - self.gamma ** 2)),
-                                     self.P / (1 - self.gamma ** 2) + ((self.gamma * self.R) / (1 - self.gamma ** 2))))
+                                     self.P / (1 - self.gamma ** 2) + ((self.gamma * self.R) / (1 - self.gamma ** 2)))
         return payoffs
 
     def calc_payoffs_bs(self, agent_types):
@@ -186,7 +203,7 @@ class GamesRunner:
                                    (self.A / (1 - self.gamma ** 4) + ((self.gamma * self.TL) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.TD) / (1 - self.gamma ** 4))))
 
         payoffs[('nTFT', 'nTFT')] = (self.TD / (1 - self.gamma ** 2) + ((self.gamma * self.TL) / (1 - self.gamma ** 2)),
-                                     self.TL / (1 - self.gamma ** 2) + ((self.gamma * self.TD) / (1 - self.gamma ** 2))))
+                                     self.TL / (1 - self.gamma ** 2) + ((self.gamma * self.TD) / (1 - self.gamma ** 2)))
         return payoffs
 
 
