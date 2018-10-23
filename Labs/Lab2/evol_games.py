@@ -4,13 +4,13 @@ import copy
 import numpy as np
 
 class GamesRunner:
-    def __init__(self, game="PD", verbose=False, n_a1=0, n_a2=.5, n_tft=.5, n_ntft=0, n_generations=6, games_per_generation=900, interaction='REP'):
+    def __init__(self, game="SH", verbose=False, n_a1=.33, n_a2=.33, n_tft=.34, n_ntft=0, n_generations=15, games_per_generation=2500, interaction='REP'):
         self.interaction = interaction
         self.n_generations = n_generations
         self.game = game
         self.n_agents = 900
         self.actions = ['C','D']        
-
+        
         self.n_a1 = n_a1
         self.n_a2 = n_a2
         self.n_tft = n_tft
@@ -96,11 +96,12 @@ class GamesRunner:
             return 'nTFT'
 
     def create_agent_lists(self):
-        self.a2_players = [AlwaysDefect(self.actions)] * int(round(self.n_a2 * self.n_agents))
-        self.a1_players = [AlwaysCooperate(self.actions)] * int(round(self.n_a1 * self.n_agents))
-        self.tft_players = [TitForTat(self.actions)] * int(round(self.n_tft * self.n_agents))
-        self.ntft_players = [NotTitForTat(self.actions)] * int(round(self.n_ntft * self.n_agents))
-        self.agents = self.a1_players + self.a2_players + self.tft_players + self.ntft_players
+        if self.interaction == 'REP':
+            self.a2_players = [AlwaysDefect(self.actions)] * int(round(self.n_a2 * self.n_agents))
+            self.a1_players = [AlwaysCooperate(self.actions)] * int(round(self.n_a1 * self.n_agents))
+            self.tft_players = [TitForTat(self.actions)] * int(round(self.n_tft * self.n_agents))
+            self.ntft_players = [NotTitForTat(self.actions)] * int(round(self.n_ntft * self.n_agents))
+            self.agents = self.a1_players + self.a2_players + self.tft_players + self.ntft_players
 
     def prisoners_dilemma(self, agent0, agent1):
         a0 = agent0.act()
