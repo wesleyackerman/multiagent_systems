@@ -3,11 +3,19 @@ from evol_games import GamesRunner
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import os
+import utils
+import pylab as pl
+
 print(os.getcwd())
 
 
 class lattice_gameboard:
-    def __init__(self, game="PD", rows=30, columns=30, agents=("A1", "A2", "TFT", "nTFT"), weights=None):
+    def __init__(self, game="PD", rows=30, columns=30, agents=("A1", "A2", "TFT", "nTFT"), weights=None, quadrants=False, variant=None, rounds=20, gamma=.95):
+        if variant is None:
+            variant = "{},{},rand={},{}".format(game, gamma, quadrants, rows)
+        self.path = os.path.join(r"./graphs/",variant)
+        utils.make_dir(self.path)
+
         self.columns = columns
         self.rows = rows
         self.shape = [self.rows, self.columns]
@@ -17,16 +25,16 @@ class lattice_gameboard:
         for i, a in enumerate(agents):
             self.mapping[a] = i
 
-        self.paired_payoff_matrix = GamesRunner().calc_payoffs(game=self.game)
+        self.paired_payoff_matrix = GamesRunner(gamma=gamma).calc_payoffs(game=self.game)
         self.agents = agents
-        self.colors = ['blue', 'red', 'green', 'violet']
+        self.colors = ['blue', 'red', 'violet', 'green']
         if weights is None:
             weights = [1 / len(self.agents)] * 4
         self.weights = weights
-        self.populate_lattice()
+        self.populate_lattice(quadrants=quadrants)
         # print(self.agent_lattice)
 
-        for i in range(0, 10):
+        for i in range(0, rounds):
             self.run_generation(i)
 
     def run_generation(self,i=0):
@@ -34,30 +42,41 @@ class lattice_gameboard:
         self.calculate_payoffs()
         self.update_lattice()
 
-    def populate_lattice(self):
+    def populate_lattice(self, quadrants=False):
         """ This populates a lattice with a mix of agents
         """
         # np.random.randint(0,4,[30,30])
-        self.agent_lattice = np.random.choice(a=self.agents, size=[self.rows, self.columns], p=self.weights)
+        half_way_rows =    int(self.rows/2)
+        half_way_columns = int(self.columns/2)
+        if quadrants:
+            self.agent_lattice = np.zeros([self.rows, self.columns], dtype=object)
+            self.agent_lattice[0:half_way_rows,0:half_way_columns] = self.agents[3]
+            self.agent_lattice[0:half_way_rows,half_way_columns:] = self.agents[2]
+            self.agent_lattice[half_way_rows:,0:half_way_columns] = self.agents[1]
+            self.agent_lattice[half_way_rows:,half_way_columns:] = self.agents[0]
+        else:
+            self.agent_lattice = np.random.choice(a=self.agents, size=[self.rows, self.columns], p=self.weights)
 
-    def update_lattice(self):
+    def update_lattice(self, use_random_argmax=True):
         """ This updates the lattice where each cell adopts the strategy of the most successful neighbor
         """
         # print(np.indices(self.shape))
         # neighbors = self.neighbor_indices(np.indices(self.shape))
         # neighbor_agents = self.agent_lattice[neighbors[:,0], neighbors[:,1]]
         new_lattice = self.agent_lattice.copy()
+        argmax = utils.random_argmax if use_random_argmax else np.argmax
         for i in range(0, self.rows):
             for j in range(0, self.columns):
                 neighbors = self.neighbor_indices([i, j])
                 neighbor_idx = (neighbors[:, 0], neighbors[:, 1])
                 neighbor_agents = self.agent_lattice[neighbor_idx]
-                best_index = np.argmax(self.payoffs[neighbor_idx])
-                new_lattice[i, j] = neighbor_agents[best_index]
-        #                 print(best_index)
-        #                 print(self.payoffs[neighbor_idx])
-        #                 print(neighbor_agents)
-        #                print(neighbor_agents)
+                best_index = argmax(self.payoffs[neighbor_idx])
+
+                # Don't change if other strategy is equivalent
+                if self.payoffs[neighbor_idx][best_index] == self.payoffs[i,j]:
+                    pass
+                else:
+                    new_lattice[i, j] = neighbor_agents[best_index]
         self.agent_lattice = new_lattice
 
     def neighbor_indices(self, index):
@@ -68,7 +87,7 @@ class lattice_gameboard:
         Returns:
             list of x,y tuples for all neighbors
         """
-        return (np.add(cartesian_product([-1, 0, 1], [-1, 0, 1]), index)) % self.rows
+        return (np.add(utils.cartesian_product([-1, 0, 1], [-1, 0, 1]), index)) % self.rows
 
     def calculate_payoffs(self):
         """ This calculates the payoffs of the lattice
@@ -100,7 +119,7 @@ class lattice_gameboard:
         cmap = mpl.colors.ListedColormap(self.colors)
         # categories, integer_encoding = np.unique(lattice, return_inverse=True)
         # integer_encoding = integer_encoding.reshape([self.rows,self.columns])
-        int_lattice = replace_array_with_map(lattice, self.mapping, new_type=object).astype(int)
+        int_lattice = utils.replace_array_with_map(lattice, self.mapping, new_type=object).astype(int)
         print(int_lattice)
         plt.imshow(int_lattice, interpolation='nearest', cmap=cmap, origin='lower')
         plt.show()
@@ -109,37 +128,28 @@ class lattice_gameboard:
         cmap = mpl.colors.ListedColormap(self.colors)
         bounds = range(0, len(self.agents) + 1)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-        int_lattice = replace_array_with_map(lattice, self.mapping, new_type=object).astype(int)
+        int_lattice = utils.replace_array_with_map(lattice, self.mapping, new_type=object).astype(int)
 
         img = plt.imshow(int_lattice, interpolation='nearest', origin='lower', cmap=cmap, norm=norm)
-        plt.colorbar(img, cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
-        plt.savefig('./graphs/lattice{}.png'.format(iteration))
+        #plt.colorbar(img, cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
+        mycmap = pl.cm.jet  # for example
+        for i,agent in enumerate(self.agents):
+            pl.plot(0, 0, "-", c=self.colors[i], label=agent)
+        pl.legend()
+        plt.savefig(os.path.join(self.path, "lattice{}.png".format(iteration)))
         plt.clf()
-
+        #print(int_lattice)
+        #print(self.colors)
     def print_summary(self):
         pass
 
 
-def replace_array_with_map(arr, map_dict, new_type=object):
-    if type(map_dict) == type([]):
-        map_dict = dict(zip(range(0, len(map_dict)), map_dict))
-    newArray = np.copy(arr).astype(new_type)
-    for k, v in map_dict.items(): newArray[arr == k] = v
-    return newArray
-
-
-#         # Remap labels array
-#         map_obj = self.calculate_angles() # a dictionary remapping
-#         f = np.vectorize(lambda x: map_obj[x])
-#         self.labels = f(self.labels)
-
-
-def cartesian_product(arr1, arr2):
-    return np.transpose([np.tile(arr1, len(arr2)), np.repeat(arr2, len(arr1))])
-
-
-# payoffs[('TFT', 'nTFT')]
-
 if __name__ == '__main__':
-    lg = lattice_gameboard(rows=30, columns=30)
+    size = 30
+    games = ["BS", "SH", "PD"]
+    for gamma in [.95,.99]:
+        for game in games:
+            for quadrants in [True, False]:
+                lg = lattice_gameboard(rows=size, columns=size, quadrants=quadrants, game=game, gamma=gamma)
+
     gameboard = lg.agent_lattice
