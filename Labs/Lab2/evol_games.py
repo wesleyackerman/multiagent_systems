@@ -4,15 +4,15 @@ import copy
 import numpy as np
 
 class GamesRunner:
-    def __init__(self, game="SH", verbose=False, n_a1=.33, n_a2=.33, n_tft=.34, n_ntft=0, n_generations=15, games_per_generation=2500, interaction='REP', gamma = .95):
+    def __init__(self, game="BS", verbose=False, n_ac=.33, n_ad=.33, n_tft=.34, n_ntft=0, n_generations=15, games_per_generation=2500, interaction='REP', gamma = .95):
         self.interaction = interaction
         self.n_generations = n_generations
         self.game = game
         self.n_agents = 900
         self.actions = ['C','D']        
         
-        self.n_a1 = n_a1
-        self.n_a2 = n_a2
+        self.n_ac = n_ac
+        self.n_ad = n_ad
         self.n_tft = n_tft
         self.n_ntft = n_ntft
 
@@ -49,18 +49,18 @@ class GamesRunner:
 
     def run(self):
         for i in range(self.n_generations):
-            print("A1:" + str(len(self.a1_players)) + "--A2:" + str(len(self.a2_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
+            print("AC:" + str(len(self.ac_players)) + "--AD:" + str(len(self.ad_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
             self.play_cycle()
             avg_payoffs = self.avg_payoffs()
             avg = self.avg_payoff(self.agents)
             print(avg)
             print(len(self.agents))
-            self.n_a1 += self.n_a1 * (self.avg_payoff(self.a1_players) / avg - 1)
-            self.n_a2 += self.n_a2 * (self.avg_payoff(self.a2_players) / avg - 1)
+            self.n_ac += self.n_ac * (self.avg_payoff(self.ac_players) / avg - 1)
+            self.n_ad += self.n_ad * (self.avg_payoff(self.ad_players) / avg - 1)
             self.n_tft += self.n_tft * (self.avg_payoff(self.tft_players) / avg - 1)
             self.n_ntft += self.n_ntft * (self.avg_payoff(self.ntft_players) / avg - 1)
-            print((int(round(self.n_a1 * self.n_agents)) + int(round(self.n_a2 * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
-            assert((int(round(self.n_a1 * self.n_agents)) + int(round(self.n_a2 * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
+            print((int(round(self.n_ac * self.n_agents)) + int(round(self.n_ad * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
+            assert((int(round(self.n_ac * self.n_agents)) + int(round(self.n_ad * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
             self.create_agent_lists()
 
     def play_cycle(self):
@@ -87,9 +87,9 @@ class GamesRunner:
     
     def convert_agent_type(self, agent):
         if agent.agent_type() == 'AlwaysCooperate':
-            return 'A1'
+            return 'AC'
         elif agent.agent_type() == 'AlwaysDefect':
-            return 'A2'
+            return 'AD'
         elif agent.agent_type() == 'TitForTat':
             return 'TFT' 
         elif agent.agent_type() == 'NotTitForTat':
@@ -97,11 +97,11 @@ class GamesRunner:
 
     def create_agent_lists(self):
         if self.interaction == 'REP':
-            self.a2_players = [AlwaysDefect(self.actions)] * int(round(self.n_a2 * self.n_agents))
-            self.a1_players = [AlwaysCooperate(self.actions)] * int(round(self.n_a1 * self.n_agents))
+            self.ad_players = [AlwaysDefect(self.actions)] * int(round(self.n_ad * self.n_agents))
+            self.ac_players = [AlwaysCooperate(self.actions)] * int(round(self.n_ac * self.n_agents))
             self.tft_players = [TitForTat(self.actions)] * int(round(self.n_tft * self.n_agents))
             self.ntft_players = [NotTitForTat(self.actions)] * int(round(self.n_ntft * self.n_agents))
-            self.agents = self.a1_players + self.a2_players + self.tft_players + self.ntft_players
+            self.agents = self.ac_players + self.ad_players + self.tft_players + self.ntft_players
 
     def prisoners_dilemma(self, agent0, agent1):
         a0 = agent0.act()
@@ -141,7 +141,7 @@ class GamesRunner:
             print(self.scoreboard[i])
 
     def avg_payoffs(self):
-        return [self.avg_payoff(self.a1_players), self.avg_payoff(self.a2_players), self.avg_payoff(self.tft_players), self.avg_payoff(self.ntft_players)]
+        return [self.avg_payoff(self.ac_players), self.avg_payoff(self.ad_players), self.avg_payoff(self.tft_players), self.avg_payoff(self.ntft_players)]
 
     def avg_payoff(self, agents):
         if len(agents) == 0:
@@ -154,7 +154,7 @@ class GamesRunner:
     def calc_payoffs(self, game=None):
         if game is None:
             game = self.game
-        agent_types = ['A1', 'A2', 'TFT', 'nTFT']
+        agent_types = ['AC', 'AD', 'TFT', 'nTFT']
         if game == 'PD':
             return self.calc_payoffs_pd(agent_types)
         elif game == 'SH': # same structure as PD, but different values
@@ -164,24 +164,24 @@ class GamesRunner:
 
     def calc_payoffs_pd(self, agent_types):
         payoffs = {}
-        payoffs[('A1', 'A1')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
-        payoffs[('A1', 'A2')] = (self.S / (1-self.gamma), self.T / (1-self.gamma))
-        payoffs[('A1', 'TFT')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
-        payoffs[('A1', 'nTFT')] = (self.S / (1-self.gamma), self.T / (1-self.gamma))
+        payoffs[('AC', 'AC')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
+        payoffs[('AC', 'AD')] = (self.S / (1-self.gamma), self.T / (1-self.gamma))
+        payoffs[('AC', 'TFT')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
+        payoffs[('AC', 'nTFT')] = (self.S / (1-self.gamma), self.T / (1-self.gamma))
 
-        payoffs[('A2', 'A1')] = (self.T / (1-self.gamma), self.S / (1-self.gamma))
-        payoffs[('A2', 'A2')] = (self.P / (1-self.gamma), self.P / (1-self.gamma))
-        payoffs[('A2', 'TFT')] = (self.T + self.gamma * (self.P / (1-self.gamma)), self.S + self.gamma * (self.P / (1-self.gamma)))
-        payoffs[('A2', 'nTFT')] = (self.P + self.gamma * (self.T / (1-self.gamma)), self.P + self.gamma * (self.S / (1-self.gamma)))
+        payoffs[('AD', 'AC')] = (self.T / (1-self.gamma), self.S / (1-self.gamma))
+        payoffs[('AD', 'AD')] = (self.P / (1-self.gamma), self.P / (1-self.gamma))
+        payoffs[('AD', 'TFT')] = (self.T + self.gamma * (self.P / (1-self.gamma)), self.S + self.gamma * (self.P / (1-self.gamma)))
+        payoffs[('AD', 'nTFT')] = (self.P + self.gamma * (self.T / (1-self.gamma)), self.P + self.gamma * (self.S / (1-self.gamma)))
 
-        payoffs[('TFT', 'A1')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
-        payoffs[('TFT', 'A2')] = (self.S + self.gamma * (self.P / (1-self.gamma)), self.T + self.gamma * (self.P / (1-self.gamma)))
+        payoffs[('TFT', 'AC')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
+        payoffs[('TFT', 'AD')] = (self.S + self.gamma * (self.P / (1-self.gamma)), self.T + self.gamma * (self.P / (1-self.gamma)))
         payoffs[('TFT', 'TFT')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
         payoffs[('TFT', 'nTFT')] = (self.S / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.T) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4)),
                                    (self.T / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.S) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4))))
 
-        payoffs[('nTFT', 'A1')] = (self.T / (1-self.gamma), self.S / (1-self.gamma))
-        payoffs[('nTFT', 'A2')] = (self.P + self.gamma * (self.S / (1-self.gamma)), self.P + self.gamma * (self.T / (1-self.gamma)))
+        payoffs[('nTFT', 'AC')] = (self.T / (1-self.gamma), self.S / (1-self.gamma))
+        payoffs[('nTFT', 'AD')] = (self.P + self.gamma * (self.S / (1-self.gamma)), self.P + self.gamma * (self.T / (1-self.gamma)))
         payoffs[('nTFT', 'TFT')] =  (self.T / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.S) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4)),
                                      (self.S / (1 - self.gamma ** 4) + ((self.gamma * self.P) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.T) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.R) / (1 - self.gamma ** 4))))
         payoffs[('nTFT', 'nTFT')] = (self.P / (1 - self.gamma ** 2) + ((self.gamma * self.R) / (1 - self.gamma ** 2)),
@@ -190,29 +190,28 @@ class GamesRunner:
 
     def calc_payoffs_bs(self, agent_types):
         payoffs = {}
-        payoffs[('A1', 'A1')] = (self.TL / (1-self.gamma), self.TD / (1-self.gamma))
-        payoffs[('A1', 'A2')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
-        payoffs[('A1', 'TFT')] = (self.TL / (1-self.gamma), self.TD / (1-self.gamma))
-        payoffs[('A1', 'nTFT')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
+        payoffs[('AC', 'AC')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
+        payoffs[('AC', 'AD')] = (self.TD / (1-self.gamma), self.TL / (1-self.gamma))
+        payoffs[('AC', 'TFT')] = (self.A + self.gamma *  (self.TD / 1-self.gamma), self.A + self.gamma *  (self.TL / 1-self.gamma))
+        payoffs[('AC', 'nTFT')] = (self.TD + self.gamma *  (self.A / 1-self.gamma), self.TL + self.gamma *  (self.A / 1-self.gamma))
 
-        payoffs[('A2', 'A1')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
-        payoffs[('A2', 'A2')] = (self.TD / (1-self.gamma), self.TL / (1-self.gamma))
-        payoffs[('A2', 'TFT')] = (self.A + self.gamma * (self.TD / (1-self.gamma)), self.A + self.gamma * (self.TL / (1-self.gamma)))
-        payoffs[('A2', 'nTFT')] = (self.TD + self.gamma * (self.A / (1-self.gamma)), self.TL + self.gamma * (self.A / (1-self.gamma)))
+        payoffs[('AD', 'AC')] = (self.TL / (1-self.gamma), self.TD / (1-self.gamma))
+        payoffs[('AD', 'AD')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
+        payoffs[('AD', 'TFT')] = (self.TL / (1-self.gamma), self.TD / (1-self.gamma))
+        payoffs[('AD', 'nTFT')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
 
-        payoffs[('TFT', 'A1')] = (self.TL / (1-self.gamma), self.TD / (1-self.gamma))
-        payoffs[('TFT', 'A2')] = (self.A + self.gamma * (self.TD / (1-self.gamma)), self.A + self.gamma * (self.TL / (1-self.gamma)))
-        payoffs[('TFT', 'TFT')] = (self.TL / (1-self.gamma), self.TD / (1-self.gamma))
-        payoffs[('TFT', 'nTFT')] = (self.A / (1 - self.gamma ** 4) + ((self.gamma * self.TD) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.TL) / (1 - self.gamma ** 4)),
-                                   (self.A / (1 - self.gamma ** 4) + ((self.gamma * self.TL) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.TD) / (1 - self.gamma ** 4))))
+        payoffs[('TFT', 'AC')] = (self.A + self.gamma *  (self.TL / 1-self.gamma), self.A + self.gamma *  (self.TD / 1-self.gamma))
+        payoffs[('TFT', 'AD')] = (self.TD / (1-self.gamma), self.TL / (1-self.gamma))
+        payoffs[('TFT', 'TFT')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
+        payoffs[('TFT', 'nTFT')] = (self.TD / (1 - self.gamma ** 4) + ((self.gamma * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.TL) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.A) / (1 - self.gamma ** 4)),
+                                   (self.TL / (1 - self.gamma ** 4) + ((self.gamma * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.TD) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.A) / (1 - self.gamma ** 4))))
 
-        payoffs[('nTFT', 'A1')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
-        payoffs[('nTFT', 'A2')] = (self.TD + self.gamma * (self.A / (1-self.gamma)), self.TL + self.gamma * (self.A / (1-self.gamma)))
-        payoffs[('nTFT', 'TFT')] = (self.A / (1 - self.gamma ** 4) + ((self.gamma * self.TD) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.TL) / (1 - self.gamma ** 4)),
-                                   (self.A / (1 - self.gamma ** 4) + ((self.gamma * self.TL) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.TD) / (1 - self.gamma ** 4))))
+        payoffs[('nTFT', 'AC')] = (self.TL + self.gamma *  (self.A / 1-self.gamma), self.TD + self.gamma *  (self.A / 1-self.gamma))
+        payoffs[('nTFT', 'AD')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
+        payoffs[('nTFT', 'TFT')] = (self.TL / (1 - self.gamma ** 4) + ((self.gamma * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.TD) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.A) / (1 - self.gamma ** 4)),
+                                   (self.TD / (1 - self.gamma ** 4) + ((self.gamma * self.A) / (1 - self.gamma ** 4)) + (((self.gamma ** 2) * self.TL) / (1 - self.gamma ** 4)) + (((self.gamma ** 3) * self.A) / (1 - self.gamma ** 4))))
 
-        payoffs[('nTFT', 'nTFT')] = (self.TD / (1 - self.gamma ** 2) + ((self.gamma * self.TL) / (1 - self.gamma ** 2)),
-                                     self.TL / (1 - self.gamma ** 2) + ((self.gamma * self.TD) / (1 - self.gamma ** 2)))
+        payoffs[('nTFT', 'nTFT')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
         return payoffs
 
 
