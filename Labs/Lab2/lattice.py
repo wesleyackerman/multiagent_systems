@@ -12,7 +12,7 @@ print(os.getcwd())
 class lattice_gameboard:
     def __init__(self, game="PD", rows=30, columns=30, agents=("A1", "A2", "TFT", "nTFT"), weights=None, quadrants=False, variant=None, rounds=20, gamma=.95):
         if variant is None:
-            variant = "{},{},rand={},{}".format(game, gamma, quadrants, rows)
+            variant = "{},{},rand={},{}".format(game, gamma, not quadrants, rows)
         self.path = os.path.join(r"./graphs/",variant)
         utils.make_dir(self.path)
 
@@ -35,7 +35,10 @@ class lattice_gameboard:
         # print(self.agent_lattice)
 
         for i in range(0, rounds):
+            old_lattice = self.agent_lattice
             self.run_generation(i)
+            if (self.agent_lattice == old_lattice).all():
+                break
 
     def run_generation(self,i=0):
         self.draw_lattice(self.agent_lattice, i)
