@@ -8,13 +8,22 @@ import pylab as pl
 
 print(os.getcwd())
 
-
+color_dict = {"A1":"blue", "A2":"red", "TFT":"violet", "nTFT":"green"}
 class lattice_gameboard:
-    def __init__(self, game="PD", rows=30, columns=30, agents=("A1", "A2", "TFT", "nTFT"), weights=None, quadrants=False, variant=None, rounds=20, gamma=.95):
+    def __init__(self, game="PD", rows=30, columns=30, agents=("A1", "A2", "TFT", "nTFT"), weights=None, variant=None, rounds=20, gamma=.95, pattern="quadrants"):
+        """
+        Args:
+              pattern (str): random, quadrants, diagonal, vertical, or horizontal - method of initializing lattice
+
+        """
+        if weights is None:
+            weights = [1 / len(self.agents)] * 4
+
         if variant is None:
-            variant = "{},{},rand={},{}".format(game, gamma, not quadrants, rows)
+            variant = "{},{},{},wt={},{},{}".format(game, gamma, rows, weights, pattern,agents)
+
         self.path = os.path.join(r"./graphs/",variant)
-        utils.make_dir(self.path)
+        utils.make_dir(self.path,delete=True)
 
         self.columns = columns
         self.rows = rows
@@ -25,19 +34,23 @@ class lattice_gameboard:
         for i, a in enumerate(agents):
             self.mapping[a] = i
 
-        self.paired_payoff_matrix = GamesRunner(gamma=gamma).calc_payoffs(game=self.game)
+        self.paired_payoff_matrix = GamesRunner(game=self.game, gamma=gamma).calc_payoffs()
         self.agents = agents
-        self.colors = ['blue', 'red', 'violet', 'green']
-        if weights is None:
-            weights = [1 / len(self.agents)] * 4
+
+        self.colors = [color_dict[a] for a in agents]
+
         self.weights = weights
-        self.populate_lattice(quadrants=quadrants)
+        self.populate_lattice(pattern=pattern, weights=self.weights)
         # print(self.agent_lattice)
+        self.winners = []
 
         for i in range(0, rounds):
             old_lattice = self.agent_lattice
             self.run_generation(i)
             if (self.agent_lattice == old_lattice).all():
+                winning_agents = np.unique(self.agent_lattice)
+                print(variant, winning_agents)
+                self.winners.append(winning_agents)
                 break
 
     def run_generation(self,i=0):
@@ -45,20 +58,32 @@ class lattice_gameboard:
         self.calculate_payoffs()
         self.update_lattice()
 
-    def populate_lattice(self, quadrants=False):
+    def populate_lattice(self, weights=None, pattern = "diagonal"):
         """ This populates a lattice with a mix of agents
         """
         # np.random.randint(0,4,[30,30])
         half_way_rows =    int(self.rows/2)
         half_way_columns = int(self.columns/2)
-        if quadrants:
-            self.agent_lattice = np.zeros([self.rows, self.columns], dtype=object)
+        self.agent_lattice = np.zeros([self.rows, self.columns], dtype=object)
+        if pattern=="random":
+            self.agent_lattice = np.random.choice(a=self.agents, size=[self.rows, self.columns], p=weights)
+        elif pattern == "quadrants":
             self.agent_lattice[0:half_way_rows,0:half_way_columns] = self.agents[3]
             self.agent_lattice[0:half_way_rows,half_way_columns:] = self.agents[2]
             self.agent_lattice[half_way_rows:,0:half_way_columns] = self.agents[1]
             self.agent_lattice[half_way_rows:,half_way_columns:] = self.agents[0]
         else:
-            self.agent_lattice = np.random.choice(a=self.agents, size=[self.rows, self.columns], p=self.weights)
+            cum_wt = 0
+            previous_item = 0
+            size = self.rows*self.columns
+            for agent_idx,w in enumerate(weights):
+                cum_wt+=w
+                next_item = int(size*cum_wt)
+                ## Populate lattice with that agent
+                for idx in range(previous_item, next_item):
+                    i,j = utils.integer_to_coordinates(idx,self.rows,self.columns, method=pattern)
+                    self.agent_lattice[i,j] = self.agents[agent_idx]
+                previous_item = next_item
 
     def update_lattice(self, use_random_argmax=True):
         """ This updates the lattice where each cell adopts the strategy of the most successful neighbor
@@ -115,8 +140,9 @@ class lattice_gameboard:
         r = 0
         for agent in neighbor_agents:
             # print(agent)
-            r += self.paired_payoff_matrix[(central_agent, agent)][0]
-        return r / 9
+            payoff = self.paired_payoff_matrix[(central_agent, agent)][0]
+            r += payoff
+        return r / 8
 
     def draw_lattice2(self, lattice):
         cmap = mpl.colors.ListedColormap(self.colors)
@@ -146,13 +172,39 @@ class lattice_gameboard:
     def print_summary(self):
         pass
 
+def main_loop(size = 30):
+    patterns = ["random", "quadrants", "horizontal", "vertical", "diagonal"]
+    #patterns = ["diagonal"]
+
+    games = ["BS", "SH", "PD"]
+    for pattern in patterns:
+        for gamma in [.95,.99]:
+            for game in games:
+                for quadrants in [True, False]:
+                    #variant = "{},{},{},{},{}".format(game, gamma, size, weights, pattern)
+                    lg = lattice_gameboard(rows=size, columns=size, game=game, gamma=gamma, pattern=pattern)
 
 if __name__ == '__main__':
     size = 30
+    gamma = .95
+    weights = [.8,.2,0,0]
     games = ["BS", "SH", "PD"]
-    for gamma in [.95,.99]:
-        for game in games:
-            for quadrants in [True, False]:
-                lg = lattice_gameboard(rows=size, columns=size, quadrants=quadrants, game=game, gamma=gamma)
+    #main_loop(size)
 
-    gameboard = lg.agent_lattice
+    if False:
+        games = ["PD"]
+        pattern = "quadrants"
+        for game in games:
+            lg = lattice_gameboard(rows=size, columns=size, game=game, gamma=gamma,weights=weights, pattern=pattern)
+
+        gameboard = lg.agent_lattice
+
+    # Anti-nephi-lehis
+    # weights = utils.normalize([.25,.25,.25,.25,.25])
+    # agents = ["TFT","A1","TFT","A2","nTFT"]
+    # lg = lattice_gameboard(rows=size, columns=size, game="PD", gamma=.95, weights=weights, pattern="diagonal", agents=agents, variant="antinephi")
+
+    weights = utils.normalize([.8,.01,.05,.05], as_list=True)
+    agents = ["A1","A2","TFT","nTFT"]
+    #agents = ["TFT","nTFT"]
+    lg = lattice_gameboard(rows=size, columns=size, game="PD", gamma=.95, weights=weights, pattern="random", agents=agents, variant=None)

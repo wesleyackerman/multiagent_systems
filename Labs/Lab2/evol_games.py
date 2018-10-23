@@ -151,16 +151,17 @@ class GamesRunner:
             avg += agent.score
         return avg / float(len(agents))
 
-    def calc_payoffs(self, game):
+    def calc_payoffs(self, game=None):
+        if game is None:
+            game = self.game
         agent_types = ['AC', 'AD', 'TFT', 'nTFT']
         if game == 'PD':
             return self.calc_payoffs_pd(agent_types)
-        elif game == 'SH':
+        elif game == 'SH': # same structure as PD, but different values
             return self.calc_payoffs_pd(agent_types)
         elif game == 'BS':
             return self.calc_payoffs_bs(agent_types)
 
-            
     def calc_payoffs_pd(self, agent_types):
         payoffs = {}
         payoffs[('AC', 'AC')] = (self.R / (1-self.gamma), self.R / (1-self.gamma))
