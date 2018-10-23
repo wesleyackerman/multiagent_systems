@@ -2,6 +2,9 @@ import numpy as np
 from evol_games import GamesRunner
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import os
+print(os.getcwd())
+
 
 class lattice_gameboard:
     def __init__(self, game="PD", rows=30, columns=30, agents=("A1", "A2", "TFT", "nTFT"), weights=None):
@@ -10,21 +13,26 @@ class lattice_gameboard:
         self.shape = [self.rows, self.columns]
         self.game = game
 
+        self.mapping = {}
+        for i, a in enumerate(agents):
+            self.mapping[a] = i
+
         self.paired_payoff_matrix = GamesRunner().calc_payoffs(game=self.game)
         self.agents = agents
+        self.colors = ['blue', 'red', 'green', 'violet']
         if weights is None:
             weights = [1 / len(self.agents)] * 4
         self.weights = weights
         self.populate_lattice()
         # print(self.agent_lattice)
-        self.draw_lattice(self.agent_lattice)
-        for i in range(0, 10):
-            self.run_generation()
 
-    def run_generation(self):
+        for i in range(0, 10):
+            self.run_generation(i)
+
+    def run_generation(self,i=0):
+        self.draw_lattice(self.agent_lattice, i)
         self.calculate_payoffs()
         self.update_lattice()
-        self.draw_lattice(self.agent_lattice)
 
     def populate_lattice(self):
         """ This populates a lattice with a mix of agents
@@ -49,6 +57,7 @@ class lattice_gameboard:
         #                 print(best_index)
         #                 print(self.payoffs[neighbor_idx])
         #                 print(neighbor_agents)
+        #                print(neighbor_agents)
         self.agent_lattice = new_lattice
 
     def neighbor_indices(self, index):
@@ -87,14 +96,42 @@ class lattice_gameboard:
             r += self.paired_payoff_matrix[(central_agent, agent)][0]
         return r / 9
 
-    def draw_lattice(self, lattice):
-        cmap = mpl.colors.ListedColormap(['blue', 'red', 'green', 'violet'])
-        categories, integer_encoding = np.unique(lattice, return_inverse=True)
-        integer_encoding = integer_encoding.reshape([self.rows, self.columns])
-        plt.imshow(integer_encoding, interpolation='nearest', cmap=cmap, origin='lower')
+    def draw_lattice2(self, lattice):
+        cmap = mpl.colors.ListedColormap(self.colors)
+        # categories, integer_encoding = np.unique(lattice, return_inverse=True)
+        # integer_encoding = integer_encoding.reshape([self.rows,self.columns])
+        int_lattice = replace_array_with_map(lattice, self.mapping, new_type=object).astype(int)
+        print(int_lattice)
+        plt.imshow(int_lattice, interpolation='nearest', cmap=cmap, origin='lower')
+        plt.show()
+
+    def draw_lattice(self, lattice, iteration=0):
+        cmap = mpl.colors.ListedColormap(self.colors)
+        bounds = range(0, len(self.agents) + 1)
+        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+        int_lattice = replace_array_with_map(lattice, self.mapping, new_type=object).astype(int)
+
+        img = plt.imshow(int_lattice, interpolation='nearest', origin='lower', cmap=cmap, norm=norm)
+        plt.colorbar(img, cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
+        plt.savefig('./graphs/lattice{}.png'.format(iteration))
+        plt.clf()
 
     def print_summary(self):
         pass
+
+
+def replace_array_with_map(arr, map_dict, new_type=object):
+    if type(map_dict) == type([]):
+        map_dict = dict(zip(range(0, len(map_dict)), map_dict))
+    newArray = np.copy(arr).astype(new_type)
+    for k, v in map_dict.items(): newArray[arr == k] = v
+    return newArray
+
+
+#         # Remap labels array
+#         map_obj = self.calculate_angles() # a dictionary remapping
+#         f = np.vectorize(lambda x: map_obj[x])
+#         self.labels = f(self.labels)
 
 
 def cartesian_product(arr1, arr2):
@@ -104,5 +141,5 @@ def cartesian_product(arr1, arr2):
 # payoffs[('TFT', 'nTFT')]
 
 if __name__ == '__main__':
-    lg = lattice_gameboard(rows=5, columns=5)
+    lg = lattice_gameboard(rows=30, columns=30)
     gameboard = lg.agent_lattice
