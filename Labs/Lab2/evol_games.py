@@ -4,7 +4,7 @@ import copy
 import numpy as np
 
 class GamesRunner:
-    def __init__(self, game="SH", verbose=False, n_a1=.33, n_a2=.33, n_tft=.34, n_ntft=0, n_generations=15, games_per_generation=2500, interaction='REP'):
+    def __init__(self, game="SH", verbose=False, n_a1=.33, n_a2=.33, n_tft=.34, n_ntft=0, n_generations=15, games_per_generation=2500, interaction='REP', gamma = .95):
         self.interaction = interaction
         self.n_generations = n_generations
         self.game = game
@@ -24,7 +24,7 @@ class GamesRunner:
             for agent in self.agents:
                 agent.type = choice([0,1])
 
-        self.gamma = .95
+        self.gamma = gamma
         self.n_games_played = 0
         self.total_rounds_played = 0
         self.n_agents = len(self.agents)
