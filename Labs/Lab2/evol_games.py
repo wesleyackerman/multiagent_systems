@@ -54,6 +54,11 @@ class GamesRunner:
             self.play_cycle()
             avg_payoffs = self.avg_payoffs()
             avg = self.avg_payoff(self.agents, all_agents=True)
+
+            #ac = self.avg_payoff(self.ac_players)
+            #tft = self.avg_payoff(self.tft_players)
+            #print("AC {}, TFT {}, AVG {}".format(ac,tft,avg))
+
             self.n_ac += self.n_ac * (safe_div(self.avg_payoff(self.ac_players), avg) - 1)
             self.n_ad += self.n_ad * (safe_div(self.avg_payoff(self.ad_players), avg) - 1)
             self.n_tft += self.n_tft * (safe_div(self.avg_payoff(self.tft_players), avg) - 1)
@@ -144,16 +149,18 @@ class GamesRunner:
 
         if all_agents:
            n_games_played = sum(self.n_games_played.values())
+           total_score=0
+           for agent_type in [self.ac_players, self.ad_players, self.tft_players, self.ntft_players]:
+               if agent_type:
+                   total_score += agent_type[0].score
         else:
            typ = self.convert_agent_type(agents[0])
            n_games_played = self.n_games_played[typ]
+           total_score = agents[0].score
         if n_games_played == 0:
+            print("DIVISION BY ZERO")
             return 0
-        avg = 0
-        for agent in agents:
-            avg += agent.score
-
-        return avg / float(n_games_played)
+        return total_score/float(n_games_played)
 
     def calc_payoffs(self, game=None):
         if game is None:
@@ -227,6 +234,7 @@ class GamesRunner:
 
 def safe_div(a, b):
     if b == 0:
+        print("DIVISION BY ZERO")
         return 0
     return a / b
 
