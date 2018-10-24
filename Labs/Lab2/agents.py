@@ -25,7 +25,7 @@ class Agent:
         self.state = None
         self.current_action = None
         self.rounds_played = 0
-        self.type = 0
+        self.pref = 0
 
     def act(self):
         # Every inheritor of Agent class should have their own action function

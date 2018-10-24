@@ -1,10 +1,11 @@
-from numpy.random import choice
+from random import choice
 from agents import *
 import copy
 import numpy as np
 
 class GamesRunner:
-    def __init__(self, game="BS", verbose=False, n_ac=.33, n_ad=.33, n_tft=.34, n_ntft=0, n_generations=15, games_per_generation=2500, interaction='REP', gamma = .95):
+    def __init__(self, game="PD", verbose=False, n_ac=0, n_ad=.75, n_tft=.25, n_ntft=.0, n_generations=15, games_per_generation=5000, interaction='REP', gamma = .95):
+        print("<><><><><><><><><><><><><><><><>")
         self.interaction = interaction
         self.n_generations = n_generations
         self.game = game
@@ -19,10 +20,6 @@ class GamesRunner:
         if interaction == 'REP':
             self.games_per_generation = games_per_generation
             self.create_agent_lists()
-
-        if game == "BS":
-            for agent in self.agents:
-                agent.type = choice([0,1])
 
         self.gamma = gamma
         self.n_games_played = 0
@@ -49,18 +46,25 @@ class GamesRunner:
 
     def run(self):
         for i in range(self.n_generations):
-            print("AC:" + str(len(self.ac_players)) + "--AD:" + str(len(self.ad_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
+            if self.n_lists_empty([self.ad_players, self.ac_players, self.tft_players, self.ntft_players]) == 3:
+                print("AC:" + str(len(self.ac_players)) + "--AD:" + str(len(self.ad_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
+                break
+
+            if i == self.n_generations - 1 or i == 0:
+                print("AC:" + str(len(self.ac_players)) + "--AD:" + str(len(self.ad_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
             self.play_cycle()
             avg_payoffs = self.avg_payoffs()
             avg = self.avg_payoff(self.agents)
-            print(avg)
-            print(len(self.agents))
-            self.n_ac += self.n_ac * (self.avg_payoff(self.ac_players) / avg - 1)
-            self.n_ad += self.n_ad * (self.avg_payoff(self.ad_players) / avg - 1)
-            self.n_tft += self.n_tft * (self.avg_payoff(self.tft_players) / avg - 1)
-            self.n_ntft += self.n_ntft * (self.avg_payoff(self.ntft_players) / avg - 1)
-            print((int(round(self.n_ac * self.n_agents)) + int(round(self.n_ad * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
-            assert((int(round(self.n_ac * self.n_agents)) + int(round(self.n_ad * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
+            self.n_ac += self.n_ac * (safe_div(self.avg_payoff(self.ac_players), avg) - 1)
+            self.n_ad += self.n_ad * (safe_div(self.avg_payoff(self.ad_players), avg) - 1)
+            self.n_tft += self.n_tft * (safe_div(self.avg_payoff(self.tft_players), avg) - 1)
+            self.n_ntft += self.n_ntft * (safe_div(self.avg_payoff(self.ntft_players), avg) - 1)
+            try:
+                assert((int(round(self.n_ac * self.n_agents)) + int(round(self.n_ad * self.n_agents)) + int(round(self.n_tft * self.n_agents)) + int(round(self.n_ntft * self.n_agents))))
+            except AssertionError:
+                print("AssertionError")
+                print ((int(round(self.n_ac * self.n_agents)), int(round(self.n_ad * self.n_agents)), int(round(self.n_tft * self.n_agents)), int(round(self.n_ntft * self.n_agents))))
+                exit()
             self.create_agent_lists()
 
     def play_cycle(self):
@@ -69,14 +73,14 @@ class GamesRunner:
             while counter < self.games_per_generation:
                 a0 = random.choice(self.agents)
                 a1 = random.choice(self.agents)
-                if self.game == 'BS' and a0.type == a1.type:
-                    continue
-                elif self.game == 'BS':
+                #if self.game == 'BS' and a0.pref == a1.pref:
+                #    continue
+                #elif self.game == 'BS':
                     # In battle of the sexes, it is assumed the agents have different preferences, and that the agent in position 0 prefers the first action
-                    if a0.type == 1:
-                        temp = a1
-                        a1 = a0
-                        a0 = temp
+                #    if a0.pref == 1:
+                #        temp = a1
+                #        a1 = a0
+                #        a0 = temp
                 self.play_game(a0, a1)
                 counter += 1
 
@@ -95,50 +99,34 @@ class GamesRunner:
         elif agent.agent_type() == 'NotTitForTat':
             return 'nTFT'
 
+    def assign_prefs(self, lists):
+        for lst in lists:
+            for agent in lst:
+                agent.pref = choice([0,1])
+
     def create_agent_lists(self):
         if self.interaction == 'REP':
             self.ad_players = [AlwaysDefect(self.actions)] * int(round(self.n_ad * self.n_agents))
             self.ac_players = [AlwaysCooperate(self.actions)] * int(round(self.n_ac * self.n_agents))
             self.tft_players = [TitForTat(self.actions)] * int(round(self.n_tft * self.n_agents))
             self.ntft_players = [NotTitForTat(self.actions)] * int(round(self.n_ntft * self.n_agents))
+            #if self.game == 'BS':
+            #    self.assign_prefs([self.ad_players, self.ac_players, self.tft_players, self.ntft_players])
+
             self.agents = self.ac_players + self.ad_players + self.tft_players + self.ntft_players
-
-    def prisoners_dilemma(self, agent0, agent1):
-        a0 = agent0.act()
-        a1 = agent1.act()
-        payoff0 = -1
-        payoff1 = -1
-
-        if self.verbose: print("Moves played: {},{}".format(a0,a1))
-
-        # Calculate Payoffs
-        if a0 == "C":
-            if a1 == "C":
-                payoff0, payoff1 = self.R, self.R
-            elif a1 == "D":
-                payoff0, payoff1 = self.S, self.T
-        elif a0 == "D":
-            if a1 == "C":
-                payoff0, payoff1 = self.T, self.S
-            elif a1 == "D":
-                payoff0, payoff1 = self.P, self.P
-
-        if -1 in [payoff0, payoff1]:
-             raise InvalidActionError("Action wasn't C or D")
-
-        # Update Strategies (after payoff eval) - need this for WinStayLossShift and SuperAgent
-        agent0.update_state(a0, a1, payoff0, payoff1)
-        agent1.update_state(a1, a0, payoff1, payoff0)
-
-
-        if self.verbose: print("Payoffs:" + str(payoff0) + "," + str(payoff1))
-        result = a0+a1
-        return payoff0, payoff1, result
-
-    def print_scoreboard(self):
-        for i,agent in enumerate(self.agents):
-            print(agent.agent_type())
-            print(self.scoreboard[i])
+        #if self.game == "BS":
+        #    print("Sdfds  " + str(len(self.agents)))
+        #    self.zero_agents = []
+        #    self.one_agents = []
+        #    for agent in self.agents:
+        #        if agent.pref == 0:
+        #            self.zero_agents.append(agent)
+        #        elif agent.pref == 1:
+        #            self.one_agents.append(agent)
+        #        else:
+        #            raise InvalidActionError("Agent has unknown preference type")
+        #    print(len(self.zero_agents))
+        #    print(len(self.one_agents)) 
 
     def avg_payoffs(self):
         return [self.avg_payoff(self.ac_players), self.avg_payoff(self.ad_players), self.avg_payoff(self.tft_players), self.avg_payoff(self.ntft_players)]
@@ -213,6 +201,18 @@ class GamesRunner:
 
         payoffs[('nTFT', 'nTFT')] = (self.A / (1-self.gamma), self.A / (1-self.gamma))
         return payoffs
+
+    def n_lists_empty(self, lists):
+        n = 0
+        for lst in lists:
+            if len(lst) == 0:
+                n += 1
+        return n
+
+def safe_div(a, b):
+    if b == 0:
+        return 0
+    return a / b
 
 
 class InvalidActionError(BaseException):
