@@ -27,6 +27,9 @@ class lattice_gameboard:
 
         if variant is None:
             self.pretty_weights = [round(w,2) for w in weights]
+            if not isinstance(self.pretty_weights, list):
+                self.pretty_weights = self.pretty_weights.tolist()
+
             variant = "{},{},{},wt={},{},{}".format(game, gamma, rows, self.pretty_weights, pattern,agents)
         self.weights = weights
 
@@ -63,7 +66,7 @@ class lattice_gameboard:
         self.final_round = i
 
     def get_results(self):
-        return [self.game, self.gamma, self.rows, self.pretty_weights.tolist(), self.pattern, self.agents, self.winners, self.final_round]
+        return [self.game, self.gamma, self.rows, self.pretty_weights, self.pattern, self.agents, self.winners, self.final_round]
 
 
     def run_generation(self,i=0):
