@@ -4,7 +4,7 @@ import copy
 import numpy as np
 
 class GamesRunner:
-    def __init__(self, game="PD", verbose=False, n_ac=0, n_ad=.75, n_tft=.25, n_ntft=.0, n_generations=15, games_per_generation=5000, interaction='REP', gamma = .95):
+    def __init__(self, game="PD", verbose=False, n_ac=0, n_ad=.75, n_tft=.25, n_ntft=.0, n_generations=30, games_per_generation=5000, interaction='REP', gamma = .95):
         print("<><><><><><><><><><><><><><><><>")
         self.interaction = interaction
         self.n_generations = n_generations
