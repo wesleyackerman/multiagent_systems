@@ -52,8 +52,10 @@ class GamesRunner:
             if i == self.n_generations - 1 or i == 0:
                 print("AC:" + str(len(self.ac_players)) + "--AD:" + str(len(self.ad_players)) + "--TFT:" + str(len(self.tft_players)) + "--nTFT:" + str(len(self.ntft_players)))
             self.play_cycle()
-            avg_payoffs = self.avg_payoffs()
+            print(self.avg_payoff(self.ac_players))
+            print(self.avg_payoff(self.tft_players))
             avg = self.avg_payoff(self.agents, all_agents=True)
+            print(avg)
             self.n_ac += self.n_ac * (safe_div(self.avg_payoff(self.ac_players), avg) - 1)
             self.n_ad += self.n_ad * (safe_div(self.avg_payoff(self.ad_players), avg) - 1)
             self.n_tft += self.n_tft * (safe_div(self.avg_payoff(self.tft_players), avg) - 1)
@@ -93,6 +95,7 @@ class GamesRunner:
         for agent in agent_list:
             typ = self.convert_agent_type(agent)
             self.n_games_played[typ] += 1
+        print(self.n_games_played)
 
     def convert_agent_type(self, agent):
         if agent.agent_type() == 'AlwaysCooperate':
@@ -149,11 +152,12 @@ class GamesRunner:
            n_games_played = self.n_games_played[typ]
         if n_games_played == 0:
             return 0
-        avg = 0
-        for agent in agents:
-            avg += agent.score
+        agent = agents[0]
+        #avg = 0
+        #for agent in agents:
+        #    avg += agent.score
 
-        return avg / float(n_games_played)
+        return agent.score / float(n_games_played)
 
     def calc_payoffs(self, game=None):
         if game is None:
