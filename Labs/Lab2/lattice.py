@@ -34,7 +34,8 @@ class lattice_gameboard:
         self.weights = weights
 
         self.path = os.path.join(r"./graphs/",variant)
-        utils.make_dir(self.path,delete=False)
+        if plot:
+            utils.make_dir(self.path,delete=False)
         self.plot = plot
         self.columns = columns
         self.rows = rows
@@ -82,7 +83,9 @@ class lattice_gameboard:
         half_way_rows =    int(self.rows/2)
         half_way_columns = int(self.columns/2)
         self.agent_lattice = np.zeros([self.rows, self.columns], dtype=object)
-        shuffled_agents = shuffle(self.agents[:]) if self.shuffle else self.agents[:]
+        shuffled_agents = self.agents.copy()
+        if self.shuffle:
+            shuffle(shuffled_agents)
 
         if pattern=="random":
             self.agent_lattice = np.random.choice(a=self.agents, size=[self.rows, self.columns], p=weights)
@@ -195,12 +198,8 @@ def main_loop(size = 30):
 
 
 def main_loop_data(size = 30):
-
-    # repititions
-    # random starts
-
-    patterns = ["random", "quadrants", "horizontal", "vertical", "diagonal"]
-    #patterns = ["diagonal"]
+    patterns = ["quadrants","random", "horizontal", "vertical", "diagonal"]
+    # patterns = ["diagonal"]
 
     # report all variation parameters, report who won, report how many reps
     results = []
@@ -208,13 +207,17 @@ def main_loop_data(size = 30):
     games = ["BS", "SH", "PD"]
     for pattern in patterns:
         max_loops = 10 if pattern == "quadrants" else 100
-        for i in range(0,max_loops):
-            for gamma in [.95,.99]:
+        for i in range(0, max_loops):
+            for gamma in [.95, .99]:
                 for game in games:
-                        weights = utils.normalize(np.random.rand(len(agents)), as_list=True)
-                        #variant = "{},{},{},{},{}".format(game, gamma, size, weights, pattern)
-                        lg = lattice_gameboard(rows=size, columns=size, game=game, gamma=gamma, pattern=pattern, weights=weights, plot=False)
-                        results.append(lg.get_results())
+                    weights = utils.normalize(np.random.rand(len(agents)), as_list=True)
+                    # variant = "{},{},{},{},{}".format(game, gamma, size, weights, pattern)
+                    lg = lattice_gameboard(rows=size, columns=size, game=game, gamma=gamma, pattern=pattern,
+                                                   weights=weights, plot=False, agents=agents)
+                    res = lg.get_results()
+                    results.append(res)
+                    print(i, res)
+
 
 if __name__ == '__main__':
     size = 30
