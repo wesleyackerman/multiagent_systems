@@ -14,7 +14,7 @@ if __name__ == '__main__':
     for game in ['SH']:
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print(game)
-        for gamma in [.95, .99]:
+        for gamma in [.99]:
             print("_______________________________________")
             print(gamma)
             #run_tournament(game, 0, 0, .1, .9, gamma)
@@ -29,12 +29,12 @@ if __name__ == '__main__':
             #run_tournament(game, .75, .25, 0, 0, gamma)
             #run_tournament(game, .9, .1, 0, 0, gamma)
 
-            run_tournament(game, .1, 0, .9, 0, gamma)
+            #run_tournament(game, .1, 0, .9, 0, gamma)
             run_tournament(game, .25, 0, .75, 0, gamma)
-            run_tournament(game, .5, 0, .5, 0, gamma)
-            run_tournament(game, .75, 0, .25, 0, gamma)
-            run_tournament(game, .9, 0, .1, 0, gamma)
-
+            #run_tournament(game, .5, 0, .5, 0, gamma)
+            #run_tournament(game, .75, 0, .25, 0, gamma)
+            #run_tournament(game, .9, 0, .1, 0, gamma)
+'''
             #run_tournament(game, .1, 0, 0, .9, gamma)
             #run_tournament(game, .25, 0, 0, .75, gamma)
             #run_tournament(game, .5, 0, 0, .5, gamma)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
             run_tournament(game, .4, .3, .3, 0, gamma)
             run_tournament(game, 0, .3, .3, .4, gamma)
 
- 
+''' 
             #run_tournament(game, 0, .1, 0, .9, gamma)
             #run_tournament(game, 0, .25, 0, .75, gamma)
             #run_tournament(game, 0, .5, 0, .5, gamma)
