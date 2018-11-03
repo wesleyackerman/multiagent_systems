@@ -1,0 +1,20 @@
+Implement Couzin's equations from [1] . Only implement the algorithm for two dimensions.
+
+What parameters produce a swarm, torus, highly parallel group, and dynamic parallel group?
+What are the average Fiedler eigenvalues for each of the groups above? (Use the topology that assumes that agents in the radius of attraction are connected bidirectionally)
+What happens if you change the organization above from one that interacts with only five nearest neighbors rather than all neighbors within the repulsion, alignment, or attraction radius? Can you produce a swarm? torus? highly parallel group? dynamic parallel group?
+Modify something less than 50% of the agents so that they don't behave according to the equations, and tell me what cool thing you were able to get them to do.
+Write a report on the experiments that you performed. The rubric from the first lab will be used on this lab too.
+
+Your report will be graded on four criteria: style, grammar, analysis, content.
+
+Style: Is there an adequate introduction? Does the conclusions section make conclusions justified by the data? Is there a logical flow to the organization of the paper?
+Grammar: Is the language adequate?
+Analysis: Does the report present not only what is found but why? Have you made conclusions that are not justified? Do you include multiple trials to account for uncertainty? Have you reported both means and variances of data?
+Content: Have you completed what was assigned? Is there some originality in the work?
+
+
+Content-Done
+Style-logical flow
+Analysis-No strong conclusions without evidence; give reasons
+Grammar-
