@@ -1,0 +1,13 @@
+fix radius of repulsion at 1
+play with orientation/attraction radii (with respect to repulsion)
+
+You may do this lab in groups of up to four or five people.
+
+Implement Couzin's equations from [1]. Only implement the algorithm for two dimensions.
+
+* What parameters produce a swarm, torus, highly parallel group, and dynamic parallel group?
+* What are the average Fiedler eigenvalues for each of the groups above? (Use the topology that assumes that agents in the radius of attraction are connected bidirectionally)
+* What happens if you change the organization above from one that interacts with only five nearest neighbors rather than all neighbors within the repulsion, alignment, or attraction radius? Can you produce a swarm? torus? highly parallel group? dynamic parallel group?
+* Modify something less than 50% of the agents so that they don't behave according to the equations, and tell me what cool thing you were able to get them to do.
+* Write a report on the experiments that you performed. The rubric from the first lab will be used on this lab too.
+
