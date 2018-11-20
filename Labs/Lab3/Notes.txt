@@ -1,3 +1,17 @@
+N individuals (1...i...N)
+c = position vectors 
+v = unit vectors
+t time steps; \tau = .1s
+n  neighbors
+d = desired_direction d_i(t+\tau) - why?
+r_r = zone of repulsion
+
+If someone within distance r_r:
+    d_r(t+\tau) = -\Sigma{j!=i}{n_r} r_ij(t)/|r_ij(t)|
+    rij = cj - ci / | cj - ci | (unit vector in the direction of neighbor j)
+
+    
+    
 fix radius of repulsion at 1
 play with orientation/attraction radii (with respect to repulsion)
 
